@@ -1,0 +1,5 @@
+---
+Checks:          'cppcoreguidline-*,modernize-*,misc-*'
+WarningsAsErrors: 'true'
+FormatStyle:     file
+...
