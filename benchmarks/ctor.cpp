@@ -9,7 +9,7 @@
 #include <catch2/catch_test_macros.hpp>
 #endif
 
-#include "zip_view.hpp" // gst::zip
+#include "zip_view.hpp" // gst::ranges::views::zip
 #include <ranges>       // std::ranges::views::zip
 #include <vector>       // std::vector
 
@@ -21,9 +21,9 @@ TEST_CASE("Benchmark ZipView Constructor", "[ctor]")
     return std::ranges::views::zip(v1);
   };
 
-  BENCHMARK("gst::zip Construct")
+  BENCHMARK("gst::ranges::views::zip Construct")
   {
     std::vector<int> v1(1000000);
-    return gst::zip(v1);
+    return gst::ranges::views::zip(v1);
   };
 }

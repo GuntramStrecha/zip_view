@@ -20,7 +20,7 @@ C++-11 implementation of std::ranges::zip_view and std::ranges::views::zip
 #include <vector>
 
 template <typename Tuple, std::size_t... Is>
-void print_tuple_impl(Tuple const& tuple, gst::index_sequence<Is...>)
+void print_tuple_impl(Tuple const& tuple, gst::detail::index_sequence<Is...>)
 {
   static_cast<void>(std::initializer_list<int>{(std::cout << std::get<Is>(tuple) << ' ', 0)...});
   std::cout << '\n';
@@ -30,7 +30,7 @@ void print_tuple_impl(Tuple const& tuple, gst::index_sequence<Is...>)
 template <typename... Args>
 void print_tuple(std::tuple<Args...> const& tuple)
 {
-  print_tuple_impl(tuple, gst::make_index_sequence<sizeof...(Args)>{});
+  print_tuple_impl(tuple, gst::detail::make_index_sequence<sizeof...(Args)>{});
 }
 
 int main()
@@ -41,7 +41,10 @@ int main()
   std::forward_list<char>  f_6 = {'a', 'b', 'c', 'd', 'e', 'f'};
   std::vector<std::string> v_4 = {"one", "two", "three", "four"};
 
-  for (auto const iter_tuple : gst::zip(a_3, l_5, d_7, f_6, v_4)) { print_tuple(iter_tuple); }
+  for (auto const iter_tuple : gst::ranges::views::zip(a_3, l_5, d_7, f_6, v_4))
+  {
+    print_tuple(iter_tuple);
+  }
 }
 ```
 

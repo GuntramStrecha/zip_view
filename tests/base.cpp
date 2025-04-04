@@ -21,9 +21,8 @@
 #include <unordered_set>
 #include <vector>
 
-SCENARIO(
-  "Comparing gst::zip_view with std::ranges::zip_view using different containers and lengths",
-  "[zip_view]")
+SCENARIO("Comparing zip_view with std::ranges::zip_view using different containers and lengths",
+         "[zip_view]")
 {
   GIVEN("Containers of the same length")
   {
@@ -39,9 +38,10 @@ SCENARIO(
     std::multimap<int, double>           mmap  = {{1, 4.4}, {2, 5.5}, {3, 6.6}};
     std::forward_list<int>               flst  = {1, 2, 3};
 
-    WHEN("Using gst::zip to create gst::zip_view for the containers")
+    WHEN("Using gst::ranges::views::zip to create gst::ranges::zip_view for the containers")
     {
-      auto gst_zipped = gst::zip(vec, lst, deq, set, uset, umset, umap, ummap, map, mmap, flst);
+      auto gst_zipped =
+        gst::ranges::views::zip(vec, lst, deq, set, uset, umset, umap, ummap, map, mmap, flst);
 
       THEN("The zipped elements shall match std::ranges::zip_view")
       {
@@ -77,12 +77,12 @@ SCENARIO(
     std::multimap<int, double>           mmap  = {{1, 4.4}, {2, 5.5}};
     std::forward_list<int>               flst  = {1, 2, 3, 4};
 
-    WHEN("Using gst::zip to create gst::zip_view for the containers")
+    WHEN("Using gst::ranges::views::zip to create gst::ranges::zip_view for the containers")
     {
-      auto gst_zipped = gst::zip(vec, lst, deq, set, uset, umset, umap, ummap, map, mmap, flst);
+      auto gst_zipped =
+        gst::ranges::views::zip(vec, lst, deq, set, uset, umset, umap, ummap, map, mmap, flst);
 
-      THEN("The zipped elements shall match std::ranges::zip_view up to the shortest container "
-           "length")
+      THEN("The zipped elements shall match std::ranges::zip_view w.r.t. the shortest container")
       {
         auto std_zipped =
           std::ranges::views::zip(vec, lst, deq, set, uset, umset, umap, ummap, map, mmap, flst);
@@ -116,9 +116,10 @@ SCENARIO(
     std::multimap<int, double>           mmap  = {};
     std::forward_list<int>               flst  = {};
 
-    WHEN("Using gst::zip to create gst::zip_view for the containers")
+    WHEN("Using gst::ranges::views::zip to create gst::ranges::zip_view for the containers")
     {
-      auto gst_zipped = gst::zip(vec, lst, deq, set, uset, umset, umap, ummap, map, mmap, flst);
+      auto gst_zipped =
+        gst::ranges::views::zip(vec, lst, deq, set, uset, umset, umap, ummap, map, mmap, flst);
 
       THEN("The zipped view shall be empty and match std::ranges::zip_view")
       {
@@ -132,7 +133,7 @@ SCENARIO(
   }
 }
 
-SCENARIO("Testing gst::zip_view member functions", "zip_view")
+SCENARIO("Testing gst::ranges::zip_view member functions", "zip_view")
 {
   GIVEN("Empty containers")
   {
@@ -140,7 +141,7 @@ SCENARIO("Testing gst::zip_view member functions", "zip_view")
     std::list<char>   lst = {};
     std::deque<float> deq = {};
 
-    auto gst_zipped = gst::zip(vec, lst, deq);
+    auto gst_zipped = gst::ranges::views::zip(vec, lst, deq);
     auto std_zipped = std::ranges::views::zip(vec, lst, deq);
 
     THEN("The zip_view shall be empty") { REQUIRE(gst_zipped.empty()); }
@@ -162,7 +163,7 @@ SCENARIO("Testing gst::zip_view member functions", "zip_view")
     std::list<char>   lst = {'a', 'b', 'c'};
     std::deque<float> deq = {1.1F, 2.2F, 3.3F};
 
-    auto gst_zipped = gst::zip(vec, lst, deq);
+    auto gst_zipped = gst::ranges::views::zip(vec, lst, deq);
     auto std_zipped = std::ranges::views::zip(vec, lst, deq);
 
     THEN("The zip_view shall not be empty") { REQUIRE_FALSE(gst_zipped.empty()); }
@@ -205,7 +206,7 @@ SCENARIO("Testing gst::zip_view member functions", "zip_view")
     std::list<char>   lst = {'a', 'b', 'c'};
     std::deque<float> deq = {1.1F, 2.2F};
 
-    auto gst_zipped = gst::zip(vec, lst, deq);
+    auto gst_zipped = gst::ranges::views::zip(vec, lst, deq);
     auto std_zipped = std::ranges::views::zip(vec, lst, deq);
 
     THEN("The zip_view shall not be empty") { REQUIRE_FALSE(gst_zipped.empty()); }
