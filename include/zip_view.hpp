@@ -35,6 +35,8 @@
 
 namespace gst
 {
+namespace detail
+{
 template <std::size_t... Is>
 struct index_sequence
 {};
@@ -47,56 +49,60 @@ template <std::size_t... Is>
 struct make_index_sequence<0, Is...> : index_sequence<Is...>
 {};
 
+static constexpr auto min_value() -> long { return 0; }
+
+template <typename T>
+static constexpr auto min_value(T value) -> T
+{
+  return value;
+}
+
+template <typename T, typename... Ts>
+static constexpr auto min_value(T first, Ts... rest) -> T
+{
+  return std::min(first, min_value(rest...));
+}
+} // namespace detail
+
+namespace ranges
+{
 template <typename... Containers>
 class zip_view
 {
 private:
   std::tuple<Containers&...> containers_;
 
-  static constexpr auto min_value() -> long { return 0; }
-
-  template <typename T>
-  static constexpr auto min_value(T value) -> T
-  {
-    return value;
-  }
-
-  template <typename T, typename... Ts>
-  static constexpr auto min_value(T first, Ts... rest) -> T
-  {
-    return std::min(first, min_value(rest...));
-  }
   template <std::size_t... Is>
-  auto min_size(index_sequence<Is...>) const -> std::ptrdiff_t
+  auto min_size(detail::index_sequence<Is...>) const -> std::ptrdiff_t
   {
-    return min_value(
+    return detail::min_value(
       std::distance(std::get<Is>(containers_).begin(), std::get<Is>(containers_).end())...);
   }
 
-  static constexpr auto INDICES = make_index_sequence<sizeof...(Containers)>{};
+  static constexpr auto INDICES = detail::make_index_sequence<sizeof...(Containers)>{};
   using iterators               = std::tuple<decltype(std::begin(std::declval<Containers&>()))...>;
   using references              = std::tuple<decltype(*std::begin(std::declval<Containers&>()))...>;
 
   template <std::size_t... Is>
-  auto begin_impl(index_sequence<Is...>) const -> iterators
+  auto begin_impl(detail::index_sequence<Is...>) const -> iterators
   {
     return std::make_tuple(std::begin(std::get<Is>(containers_))...);
   }
 
   template <std::size_t... Is>
-  auto end_impl(index_sequence<Is...> is) const -> iterators
+  auto end_impl(detail::index_sequence<Is...> is) const -> iterators
   {
     return std::make_tuple(std::next(std::begin(std::get<Is>(containers_)), min_size(is))...);
   }
 
   template <std::size_t... Is>
-  auto subscripts(std::ptrdiff_t const index, index_sequence<Is...>) -> references
+  auto subscripts(std::ptrdiff_t const index, detail::index_sequence<Is...>) -> references
   {
     return std::tie(*std::next(std::begin(std::get<Is>(containers_)), index)...);
   }
 
   template <std::size_t... Is>
-  auto subscripts(std::ptrdiff_t const index, index_sequence<Is...>) const -> references
+  auto subscripts(std::ptrdiff_t const index, detail::index_sequence<Is...>) const -> references
   {
     return std::tie(*std::next(std::begin(std::get<Is>(containers_)), index)...);
   }
@@ -108,13 +114,13 @@ public:
     iterators iters_;
 
     template <std::size_t... Is>
-    auto increment(index_sequence<Is...>) -> void
+    auto increment(detail::index_sequence<Is...>) -> void
     {
       static_cast<void>(std::initializer_list<int>{(std::advance(std::get<Is>(iters_), 1), 0)...});
     }
 
     template <std::size_t... Is>
-    auto dereference(index_sequence<Is...>) -> references
+    auto dereference(detail::index_sequence<Is...>) -> references
     {
       return std::tie(*std::get<Is>(iters_)...);
     }
@@ -181,6 +187,8 @@ template <typename... Containers>
 explicit zip_view(Containers&&... containers) -> zip_view<Containers...>;
 #endif
 
+namespace views
+{
 template <typename... Containers>
 auto zip(Containers&... containers) -> zip_view<Containers...>
 {
@@ -193,4 +201,6 @@ auto zip(Containers&&... containers) -> zip_view<Containers...>
   return zip_view<Containers...>(std::forward<Containers>(containers)...);
 }
 
+} // namespace views
+} // namespace ranges
 } // namespace gst
