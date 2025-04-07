@@ -23,7 +23,7 @@ TEST_CASE("Benchmark ZipView Iteration", "[loop]")
   auto             zip_ref = std::ranges::views::zip(v1);
   auto             zip_sut = gst::ranges::views::zip(v1);
 
-  BENCHMARK("std::zip Iterate")
+  BENCHMARK("std::ranges::views::zip Iterate")
   {
     int sum = 0;
     for (auto t : zip_ref) { sum += std::get<0>(t); }

@@ -15,7 +15,7 @@
 
 TEST_CASE("Benchmark ZipView Constructor", "[ctor]")
 {
-  BENCHMARK("std::zip Construct")
+  BENCHMARK("std::ranges::views::zip Construct")
   {
     std::vector<int> v1(1000000);
     return std::ranges::views::zip(v1);

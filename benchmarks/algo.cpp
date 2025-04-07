@@ -25,7 +25,7 @@ TEST_CASE("Benchmark ZipView Accumulate", "[algo]")
   auto             zip_ref = std::ranges::views::zip(v1);
   auto             zip_sut = gst::ranges::views::zip(v1);
 
-  BENCHMARK("std::zip Accumulate")
+  BENCHMARK("std::ranges::views::zip Accumulate")
   {
     return std::accumulate(
       zip_ref.begin(), zip_ref.end(), 0, [](auto acc, auto t) { return acc + std::get<0>(t); });
@@ -46,7 +46,7 @@ TEST_CASE("Benchmark ZipView Transform", "[algo]")
   auto             zip_sut  = gst::ranges::views::zip(v1);
   auto const       doubling = [](auto t) { return std::get<0>(t) * 2; };
 
-  BENCHMARK("std::zip Transform")
+  BENCHMARK("std::ranges::views::zip Transform")
   {
     std::transform(zip_ref.begin(), zip_ref.end(), v2.begin(), doubling);
     return v2;
