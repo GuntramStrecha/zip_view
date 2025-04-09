@@ -62,7 +62,8 @@ private:
   template <std::size_t... Is>
   auto min_size(detail::index_sequence<Is...>) const -> std::ptrdiff_t
   {
-    return std::min({std::distance(std::get<Is>(containers_).begin(), std::get<Is>(containers_).end())...});
+    return std::min(
+      {std::distance(std::get<Is>(containers_).begin(), std::get<Is>(containers_).end())...});
   }
 
   template <std::size_t... Is>
@@ -128,6 +129,9 @@ public:
     auto operator!=(iterator const& other) const -> bool { return !(*this == other); }
   };
 
+  using reverse_iterator = std::reverse_iterator<iterator>;
+  using move_iterator    = std::move_iterator<iterator>;
+
   zip_view(Containers&... containers) : containers_(containers...) {}
   zip_view(Containers&&... containers) : containers_(std::tie(containers...)) {}
   zip_view() = default;
@@ -151,8 +155,12 @@ public:
 
   auto           begin() const -> iterator { return iterator(begin_impl(INDICES)); }
   auto           begin() -> iterator { return iterator(begin_impl(INDICES)); }
+  auto           rbegin() -> reverse_iterator { return reverse_iterator(end()); }
+  auto           mbegin() -> move_iterator { return move_iterator(begin()); }
   auto           end() const -> iterator { return iterator(end_impl(INDICES)); }
   auto           end() -> iterator { return iterator(end_impl(INDICES)); }
+  auto           rend() -> reverse_iterator { return reverse_iterator(begin()); }
+  auto           mend() -> move_iterator { return move_iterator(end()); }
   constexpr auto size() const -> std::ptrdiff_t { return min_size(INDICES); }
   constexpr auto empty() const -> bool { return size() == 0; }
   auto           front() const -> references { return subscripts(0, INDICES); }
