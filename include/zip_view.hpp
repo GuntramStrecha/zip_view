@@ -62,7 +62,8 @@ private:
   template <std::size_t... Is>
   auto min_size(detail::index_sequence<Is...>) const -> std::ptrdiff_t
   {
-    return std::min({std::distance(std::get<Is>(containers_).begin(), std::get<Is>(containers_).end())...});
+    return std::min(
+      {std::distance(std::get<Is>(containers_).begin(), std::get<Is>(containers_).end())...});
   }
 
   template <std::size_t... Is>
@@ -96,9 +97,9 @@ public:
     iterators iters_;
 
     template <std::size_t... Is>
-    auto increment(detail::index_sequence<Is...>) -> void
+    auto advance(detail::index_sequence<Is...>, std::ptrdiff_t n) -> void
     {
-      static_cast<void>(std::initializer_list<int>{(std::advance(std::get<Is>(iters_), 1), 0)...});
+      static_cast<void>(std::initializer_list<int>{(std::advance(std::get<Is>(iters_), n), 0)...});
     }
 
     template <std::size_t... Is>
@@ -107,25 +108,87 @@ public:
       return std::tie(*std::get<Is>(iters_)...);
     }
 
+    template <std::size_t... Is>
+    auto distance_to(detail::index_sequence<Is...>, iterator const& other) const -> std::ptrdiff_t
+    {
+      return std::min({std::distance(std::get<Is>(other.iters_), std::get<Is>(iters_))...});
+    }
+
   public:
-    typedef std::forward_iterator_tag iterator_category;
-    typedef references                value_type;
-    typedef std::ptrdiff_t            difference_type;
-    typedef value_type*               pointer;
-    typedef value_type&               reference;
+    typedef std::random_access_iterator_tag iterator_category;
+    typedef references                      value_type;
+    typedef std::ptrdiff_t                  difference_type;
+    typedef value_type*                     pointer;
+    typedef value_type&                     reference;
 
     iterator(iterators iters) : iters_(iters) {}
 
     auto operator++() -> iterator&
     {
-      increment(INDICES);
+      advance(INDICES, 1);
       return *this;
     }
 
-    references operator*() { return dereference(INDICES); }
+    auto operator--() -> iterator&
+    {
+      advance(INDICES, -1);
+      return *this;
+    }
+
+    auto operator++(int) -> iterator
+    {
+      auto temp = *this;
+      ++(*this);
+      return temp;
+    }
+
+    auto operator--(int) -> iterator
+    {
+      auto temp = *this;
+      --(*this);
+      return temp;
+    }
+
+    auto operator+=(difference_type n) -> iterator&
+    {
+      advance(INDICES, n);
+      return *this;
+    }
+
+    auto operator-=(difference_type n) -> iterator&
+    {
+      advance(INDICES, -n);
+      return *this;
+    }
+
+    auto operator+(difference_type n) const -> iterator
+    {
+      auto temp  = *this;
+      temp      += n;
+      return temp;
+    }
+
+    auto operator-(difference_type n) const -> iterator
+    {
+      auto temp  = *this;
+      temp      -= n;
+      return temp;
+    }
+
+    auto operator-(iterator const& other) const -> difference_type
+    {
+      return distance_to(INDICES, other);
+    }
+
+    auto operator[](difference_type n) -> references { return *(*this + n); }
+
+    auto operator*() -> references { return dereference(INDICES); }
 
     auto operator==(iterator const& other) const -> bool { return iters_ == other.iters_; }
+    auto operator<(iterator const& other) const -> bool { return iters_ > other.iters_; }
     auto operator!=(iterator const& other) const -> bool { return !(*this == other); }
+    auto operator<=(iterator const& other) const -> bool { return !(*this > other); }
+    auto operator>=(iterator const& other) const -> bool { return !(*this < other); }
   };
 
   zip_view(Containers&... containers) : containers_(containers...) {}

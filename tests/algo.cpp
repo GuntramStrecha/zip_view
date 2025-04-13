@@ -232,3 +232,29 @@ SCENARIO("zip_view zips three containers and fills with a generator", "[algorith
     }
   }
 }
+
+SCENARIO("zip_view zips three containers and sorts them", "[algorithms]")
+{
+  GIVEN("three containers of the same size with unsorted elements")
+  {
+    std::array<int, 3>   v1{3, 1, 2};
+    std::array<float, 3> v2{11.1F, 22.2F, 33.3F};
+    std::array<char, 3>  v3{'b', 'c', 'a'};
+
+    THEN("we can zip them")
+    {
+      auto zip = gst::ranges::views::zip(v1, v2, v3);
+
+      AND_THEN("we can sort the zipped view based on the first container")
+      {
+        std::sort(zip.begin(),
+                  zip.end(),
+                  [](auto const& a, auto const& b) { return std::get<0>(a) < std::get<0>(b); });
+
+        REQUIRE(v1 == std::array<int, 3>{1, 2, 3});
+        REQUIRE(v2 == std::array<float, 3>{22.2F, 33.3F, 11.1F});
+        REQUIRE(v3 == std::array<char, 3>{'c', 'a', 'b'});
+      }
+    }
+  }
+}
