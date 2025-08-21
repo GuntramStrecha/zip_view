@@ -359,6 +359,10 @@ SCENARIO("Testing temporary gst::ranges::zip_view", "[edge]")
     {
       REQUIRE(gst::ranges::views::zip(Vec{1, 2, 3}, Lst{'a', 'b', 'c'}).size() == 3);
     }
+    THEN("The zip_view should be convertible to bool")
+    {
+      REQUIRE(static_cast<bool>(gst::ranges::views::zip(Vec{1, 2, 3}, Lst{'a', 'b', 'c'})) == true);
+    }
     THEN("The front element should be the first elements of each container")
     {
       REQUIRE(std::get<0>(gst::ranges::views::zip(Vec{1, 2, 3}, Lst{'a', 'b', 'c'}).front()) == 1);
