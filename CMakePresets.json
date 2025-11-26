@@ -35,10 +35,7 @@
       "name": "release",
       "displayName": "Release Config",
       "description": "Optimized release build",
-      "inherits": "default",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
-      }
+      "inherits": "default"
     },
     {
       "name": "ci-linux-gcc",
