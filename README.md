@@ -4,7 +4,44 @@
 # zip_view
 C++-11 implementation of std::ranges::zip_view and std::ranges::views::zip
 
-# Example
+## Iterator Category
+
+`gst::ranges::zip_view` adapts its iterator category to the weakest underlying range, similar to `std::ranges::zip_view`:
+
+- **Random Access Iterator**: When all underlying ranges are random-access (e.g., `std::vector`, `std::array`, `std::deque`)
+- **Bidirectional Iterator**: When all underlying ranges are at least bidirectional (e.g., `std::list`)
+- **Forward Iterator**: When any underlying range is only forward (e.g., `std::forward_list`)
+
+This allows algorithms like `std::sort` to work directly on the zipped view when all underlying ranges support random access.
+
+### Sorting Example
+
+When all containers are random-access, you can use `std::sort` directly on the zipped view:
+
+```cpp
+#include "zip_view.hpp"
+#include <algorithm>
+#include <vector>
+
+int main()
+{
+  std::vector<int>    keys   = {3, 1, 2};
+  std::vector<double> values = {30.0, 10.0, 20.0};
+
+  auto zipped = gst::ranges::views::zip(keys, values);
+
+  // Sort by key - both containers are sorted together
+  std::sort(zipped.begin(), zipped.end(),
+            [](auto const& a, auto const& b) { return std::get<0>(a) < std::get<0>(b); });
+
+  // keys:   {1, 2, 3}
+  // values: {10.0, 20.0, 30.0}
+}
+```
+
+When a `std::list` or `std::forward_list` is involved, `std::sort` cannot be used on the view because the iterator category is no longer random-access. In such cases, consider using index-based sorting or materializing the data.
+
+## Example
 ```cpp
 #include "zip_view.hpp"
 
@@ -48,19 +85,19 @@ int main()
 }
 ```
 
-# Output
+## Output
 ```
 1 1.1 1 a one
 2 2.2 0 b two
 3 3.3 1 c three
 ```
 
-# Requirements
+## Requirements
 - C++-11 for the examples
 - C++-23 for the tests (`Catch2`)
 - C++-23 for the benchmarks (for comparing to `std::ranged::zip_view`)
 
-# Build
+## Build
 ```bash
 mkdir build
 cd build
