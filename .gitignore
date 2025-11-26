@@ -34,6 +34,9 @@
 # Directories
 /build/
 
+# CMake user presets (user-specific)
+CMakeUserPresets.json
+
 # Eclipse
 /.project
 /.cproject

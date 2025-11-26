@@ -1,0 +1,15 @@
+@PACKAGE_INIT@
+
+# ZipViews package configuration file
+
+include(CMakeFindDependencyMacro)
+
+# This is a header-only library, so we just need to set the include directories
+if(NOT TARGET ZipViews::ZipViews)
+  add_library(ZipViews::ZipViews INTERFACE IMPORTED)
+  set_target_properties(ZipViews::ZipViews PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "@PACKAGE_INCLUDE_INSTALL_DIR@"
+  )
+endif()
+
+check_required_components(ZipViews)

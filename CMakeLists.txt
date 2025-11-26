@@ -6,6 +6,8 @@ enable_testing()
 
 include(FetchContent)
 include(CTest)
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
 
 # Fetch Catch2
 FetchContent_Declare(
@@ -77,3 +79,47 @@ if(CODE_COVERAGE)
     message(WARNING "gcovr not found! Coverage report will not be generated.")
   endif()
 endif()
+
+# Add config target to group non-source configuration files for IDE visibility
+add_custom_target(config SOURCES
+  ${CMAKE_SOURCE_DIR}/CMakeLists.txt
+  ${CMAKE_SOURCE_DIR}/CMakePresets.json
+  ${CMAKE_SOURCE_DIR}/README.md
+  ${CMAKE_SOURCE_DIR}/CONTRIBUTING.md
+  ${CMAKE_SOURCE_DIR}/CODE_OF_CONDUCT.md
+  ${CMAKE_SOURCE_DIR}/LICENSE
+  ${CMAKE_SOURCE_DIR}/.clang-format
+  ${CMAKE_SOURCE_DIR}/.clang-tidy
+  ${CMAKE_SOURCE_DIR}/.gitignore
+  ${CMAKE_SOURCE_DIR}/.pre-commit-config.yaml
+)
+
+# Installation rules for header-only library
+install(
+  FILES ${CMAKE_SOURCE_DIR}/include/zip_view.hpp
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+# Generate and install package configuration files
+set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR})
+set(CONFIG_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/ZipViews)
+
+configure_package_config_file(
+  ${CMAKE_SOURCE_DIR}/cmake/ZipViewsConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/ZipViewsConfig.cmake
+  INSTALL_DESTINATION ${CONFIG_INSTALL_DIR}
+  PATH_VARS INCLUDE_INSTALL_DIR
+)
+
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/ZipViewsConfigVersion.cmake
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
+
+install(
+  FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/ZipViewsConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/ZipViewsConfigVersion.cmake
+  DESTINATION ${CONFIG_INSTALL_DIR}
+)
