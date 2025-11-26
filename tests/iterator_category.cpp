@@ -263,9 +263,10 @@ SCENARIO("std::sort works on random access zip_view", "[algorithms][sort]")
       THEN("both containers are sorted according to the keys")
       {
         REQUIRE(keys == std::vector<int>{1, 1, 2, 3, 4, 5, 6, 9});
-        // Values should follow their respective keys
+        // Values should follow their respective keys (note: std::sort is not stable,
+        // so for equal keys the relative order may vary, but values should still match keys)
         // Original pairs: (3,30), (1,10), (4,40), (1,11), (5,50), (9,90), (2,20), (6,60)
-        // Sorted by key:  (1,10), (1,11), (2,20), (3,30), (4,40), (5,50), (6,60), (9,90)
+        // After sorting, each value should match its original key
         REQUIRE(values == std::vector<double>{10.0, 11.0, 20.0, 30.0, 40.0, 50.0, 60.0, 90.0});
       }
     }

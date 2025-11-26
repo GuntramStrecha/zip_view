@@ -116,7 +116,8 @@ private:
   static constexpr auto INDICES = detail::make_index_sequence<sizeof...(Containers)>{};
   using iterators               = std::tuple<decltype(std::begin(std::declval<Containers&>()))...>;
   using references              = std::tuple<decltype(*std::begin(std::declval<Containers&>()))...>;
-  using values = std::tuple<typename std::remove_reference<decltype(*std::begin(std::declval<Containers&>()))>::type...>;
+  using values = std::tuple<
+    typename std::remove_reference<decltype(*std::begin(std::declval<Containers&>()))>::type...>;
 
   template <std::size_t... Is>
   auto min_size(detail::index_sequence<Is...>) const -> std::ptrdiff_t
