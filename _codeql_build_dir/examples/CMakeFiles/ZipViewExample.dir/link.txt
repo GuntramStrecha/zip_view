@@ -1,1 +1,0 @@
-/home/runner/work/zip_view/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/ZipViewExample.dir/link.d CMakeFiles/ZipViewExample.dir/example.cpp.o -o ZipViewExample

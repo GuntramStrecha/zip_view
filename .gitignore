@@ -33,6 +33,7 @@
 
 # Directories
 /build/
+/_codeql_build_dir/
 
 # Eclipse
 /.project
