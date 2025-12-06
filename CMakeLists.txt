@@ -67,12 +67,27 @@ endif()
 if(CODE_COVERAGE)
   find_program(GCOVR_EXE NAMES gcovr)
   if(GCOVR_EXE)
-    add_custom_target(
-      coverage
-      COMMAND ${GCOVR_EXE} -r ${CMAKE_SOURCE_DIR} --html --html-details -o coverage.html
-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-      COMMENT "Generating code coverage report with gcovr"
-    )
+    # For Clang, use llvm-cov gcov wrapper
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      find_program(LLVM_COV_EXE NAMES llvm-cov)
+      if(LLVM_COV_EXE)
+        add_custom_target(
+          coverage
+          COMMAND ${GCOVR_EXE} -r ${CMAKE_SOURCE_DIR} --gcov-executable "${LLVM_COV_EXE} gcov" --filter ${CMAKE_SOURCE_DIR}/include/ --html --html-details -o coverage.html
+          WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+          COMMENT "Generating code coverage report with gcovr and llvm-cov for include folder only"
+        )
+      else()
+        message(WARNING "llvm-cov not found! Coverage report will not be generated for Clang.")
+      endif()
+    else()
+      add_custom_target(
+        coverage
+        COMMAND ${GCOVR_EXE} -r ${CMAKE_SOURCE_DIR} --filter ${CMAKE_SOURCE_DIR}/include/ --html --html-details -o coverage.html
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        COMMENT "Generating code coverage report with gcovr for include folder only"
+      )
+    endif()
   else()
     message(WARNING "gcovr not found! Coverage report will not be generated.")
   endif()
