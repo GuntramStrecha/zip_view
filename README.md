@@ -1,5 +1,6 @@
 [![codecov](https://codecov.io/gh/GuntramStrecha/zip_view/graph/badge.svg?token=KD7V3790WF)](https://codecov.io/gh/GuntramStrecha/zip_view)
 [![CodeQL](https://github.com/GuntramStrecha/zip_view/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/GuntramStrecha/zip_view/actions/workflows/codeql-analysis.yml)
+[![Benchmarks](https://github.com/GuntramStrecha/zip_view/actions/workflows/benchmark.yml/badge.svg)](https://github.com/GuntramStrecha/zip_view/actions/workflows/benchmark.yml)
 
 # zip_view
 C++-11 implementation of std::ranges::zip_view and std::ranges::views::zip
@@ -63,4 +64,16 @@ mkdir build
 cd build
 cmake ..
 make
+```
+## Benchmarks
+
+The project includes comprehensive benchmarks comparing `gst::ranges::views::zip` with `std::ranges::views::zip` (C++23):
+
+### Benchmark History
+View the [benchmark history dashboard](https://guntramstrecha.github.io/zip_view/dev/bench/) to track performance over time.
+
+### Running Benchmarks Locally
+```bash
+cd build
+./benchmarks/ZipViewBenchmark
 ```

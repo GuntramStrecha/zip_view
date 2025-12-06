@@ -1,0 +1,100 @@
+name: Benchmarks
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:  # Allow manual triggering
+
+env:
+  VERBOSE: 1
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up CMake
+      uses: lukka/get-cmake@latest
+
+    - name: Configure CMake
+      run: >
+        cmake -B ${{ github.workspace }}/build
+        -DCMAKE_CXX_COMPILER=g++
+        -DCMAKE_CXX_STANDARD=23
+        -DCMAKE_CXX_STANDARD_REQUIRED=True
+        -DCMAKE_BUILD_TYPE=Release
+        -S ${{ github.workspace }}
+
+    - name: Build Benchmarks
+      run: cmake --build ${{ github.workspace }}/build --config Release --target ZipViewBenchmark
+
+    - name: Run Benchmarks
+      id: run-benchmarks
+      run: |
+        cd ${{ github.workspace }}/build
+        ./benchmarks/ZipViewBenchmark --reporter console::out=-::colour-mode=none 2>&1 | tee benchmark_results.txt
+
+    - name: Store Benchmark Result
+      uses: benchmark-action/github-action-benchmark@v1
+      with:
+        name: C++ Benchmark
+        tool: 'catch2'
+        output-file-path: ${{ github.workspace }}/build/benchmark_results.txt
+        # GitHub Pages branch to store data
+        gh-pages-branch: gh-pages
+        benchmark-data-dir-path: dev/bench
+        # Comment on PR with comparison
+        comment-on-alert: true
+        alert-threshold: '110%'
+        fail-on-alert: false
+        # Auto-push to gh-pages (only on main branch pushes)
+        auto-push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        # Keep historical data (default is 20)
+        max-items-in-chart: 999
+
+    - name: Upload Benchmark Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-results
+        path: ${{ github.workspace }}/build/benchmark_results.txt
+
+    - name: Extract Performance Summary
+      run: |
+        cd ${{ github.workspace }}/build
+        echo "## Benchmark Results Summary" > benchmark_summary.md
+        echo "" >> benchmark_summary.md
+        echo '```' >> benchmark_summary.md
+        grep -A 5 "benchmark name" benchmark_results.txt | head -100 >> benchmark_summary.md || echo "No benchmark data found" >> benchmark_summary.md
+        echo '```' >> benchmark_summary.md
+        cat benchmark_summary.md
+
+    - name: Comment PR with Benchmark Results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const fs = require('fs');
+          const summary = fs.readFileSync('${{ github.workspace }}/build/benchmark_summary.md', 'utf8');
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: summary
+          });
+
+    - name: Add to Job Summary
+      if: always()
+      run: |
+        cd ${{ github.workspace }}/build
+        echo "# Benchmark Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        cat benchmark_results.txt >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
