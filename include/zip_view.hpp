@@ -242,7 +242,7 @@ public:
     template <bool B = is_random_access, typename std::enable_if<B, int>::type = 0>
     auto operator-=(difference_type const n) -> iterator&
     {
-      advance_by(static_cast<difference_type>(0) - n, INDICES);
+      advance_by(-n, INDICES);
       return *this;
     }
 
