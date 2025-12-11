@@ -26,7 +26,7 @@ SCENARIO("zip_view zips three containers and applies for_each", "[algorithms]")
 
     THEN("we can zip them")
     {
-      auto zip = gst::zip(v1, v2, v3);
+      auto zip = gst::ranges::views::zip(v1, v2, v3);
       AND_THEN("we can apply for_each to the zipped view")
       {
         std::for_each(zip.begin(),
@@ -56,7 +56,7 @@ SCENARIO("zip_view zips three containers and counts elements with count_if", "[a
 
     THEN("we can zip them")
     {
-      auto zip = gst::zip(v1, v2, v3);
+      auto zip = gst::ranges::views::zip(v1, v2, v3);
       AND_THEN("we can count elements in the zipped view with count_if")
       {
         auto count = std::count_if(
@@ -78,7 +78,7 @@ SCENARIO("zip_view zips three containers and removes elements with remove_if", "
 
     THEN("we can zip them")
     {
-      auto zip = gst::zip(v1, v2, v3);
+      auto zip = gst::ranges::views::zip(v1, v2, v3);
       AND_THEN("we can remove elements from the zipped view with remove_if")
       {
         auto new_end =
@@ -103,7 +103,7 @@ SCENARIO("zip_view zips three containers and accumulate", "[algorithms]")
 
     THEN("we can zip them")
     {
-      auto zip = gst::zip(v1, v2, v3);
+      auto zip = gst::ranges::views::zip(v1, v2, v3);
 
       AND_THEN("we can accumulate the zipped view depending on the first element")
       {
@@ -130,7 +130,7 @@ SCENARIO("zip_view zips three containers and transforms (unary)", "[algorithms]"
 
     THEN("we can zip them")
     {
-      auto zip = gst::zip(v1, v2, v3);
+      auto zip = gst::ranges::views::zip(v1, v2, v3);
       AND_THEN("we can transform the zipped view")
       {
         std::array<double, 3> res;
@@ -158,8 +158,8 @@ SCENARIO("zip_view zips two containers and transforms (binary)", "[algorithms]")
 
     THEN("we can zip them")
     {
-      auto zip1 = gst::zip(v1);
-      auto zip2 = gst::zip(v2);
+      auto zip1 = gst::ranges::views::zip(v1);
+      auto zip2 = gst::ranges::views::zip(v2);
 
       AND_THEN("we can transform the zipped views with a binary operation")
       {
@@ -194,7 +194,7 @@ SCENARIO("zip_view zips three containers and fills", "[algorithms]")
 
     THEN("we can zip them")
     {
-      auto zip = gst::zip(v1, v2, v3);
+      auto zip = gst::ranges::views::zip(v1, v2, v3);
       AND_THEN("we can fill the zipped view")
       {
         std::fill(zip.begin(), zip.end(), std::make_tuple(0, 0.0F, 'z'));
@@ -217,7 +217,7 @@ SCENARIO("zip_view zips three containers and fills with a generator", "[algorith
 
     THEN("we can zip them")
     {
-      auto zip = gst::zip(v1, v2, v3);
+      auto zip = gst::ranges::views::zip(v1, v2, v3);
       AND_THEN("we can fill the zipped view with a generator")
       {
         auto generator = [n = 1, f = 1.1F, c = 'a']() mutable

@@ -17,7 +17,7 @@
 #include <tuple>
 #include <vector>
 
-SCENARIO("Testing gst::zip_view with edge scenarios", "[edge]")
+SCENARIO("Testing gst::ranges::zip_view with edge scenarios", "[edge]")
 {
   GIVEN("Single element containers")
   {
@@ -25,7 +25,7 @@ SCENARIO("Testing gst::zip_view with edge scenarios", "[edge]")
     std::list<char>   lst = {'a'};
     std::deque<float> deq = {1.1F};
 
-    auto gst_zipped = gst::zip(vec, lst, deq);
+    auto gst_zipped = gst::ranges::views::zip(vec, lst, deq);
 
     THEN("The zip_view should not be empty") { REQUIRE_FALSE(gst_zipped.empty()); }
     THEN("The size should be one") { REQUIRE(gst_zipped.size() == 1); }
@@ -44,7 +44,7 @@ SCENARIO("Testing gst::zip_view with edge scenarios", "[edge]")
     std::list<std::string> lst = {"a", "b"};
     std::deque<double>     deq = {1.1, 2.2};
 
-    auto gst_zipped = gst::zip(vec, lst, deq);
+    auto gst_zipped = gst::ranges::views::zip(vec, lst, deq);
 
     THEN("The zip_view should not be empty") { REQUIRE_FALSE(gst_zipped.empty()); }
     THEN("The size should be two") { REQUIRE(gst_zipped.size() == 2); }
@@ -63,7 +63,7 @@ SCENARIO("Testing gst::zip_view with edge scenarios", "[edge]")
     std::list<std::list<char>>    lst = {{'a', 'b'}, {'c', 'd'}};
     std::deque<std::deque<float>> deq = {{1.1F, 2.2F}, {3.3F, 4.4F}};
 
-    auto gst_zipped = gst::zip(vec, lst, deq);
+    auto gst_zipped = gst::ranges::views::zip(vec, lst, deq);
 
     THEN("The zip_view should not be empty") { REQUIRE_FALSE(gst_zipped.empty()); }
     THEN("The size should be two") { REQUIRE(gst_zipped.size() == 2); }
@@ -93,7 +93,7 @@ SCENARIO("Testing gst::zip_view with edge scenarios", "[edge]")
     std::list<Custom>   lst = {{3, 'c', 3.3F}, {4, 'd', 4.4F}};
     std::deque<Custom>  deq = {{5, 'e', 5.5F}, {6, 'f', 6.6F}};
 
-    auto gst_zipped = gst::zip(vec, lst, deq);
+    auto gst_zipped = gst::ranges::views::zip(vec, lst, deq);
 
     THEN("The zip_view should not be empty") { REQUIRE_FALSE(gst_zipped.empty()); }
     THEN("The size should be two") { REQUIRE(gst_zipped.size() == 2); }
@@ -128,7 +128,7 @@ SCENARIO("Testing gst::zip_view with edge scenarios", "[edge]")
     deq.emplace_back(5);
     deq.emplace_back(6);
 
-    auto gst_zipped = gst::zip(std::move(vec), std::move(lst), std::move(deq));
+    auto gst_zipped = gst::ranges::views::zip(std::move(vec), std::move(lst), std::move(deq));
 
     THEN("The zip_view should not be empty") { REQUIRE_FALSE(gst_zipped.empty()); }
     THEN("The size should be two") { REQUIRE(gst_zipped.size() == 2); }
@@ -142,7 +142,7 @@ SCENARIO("Testing gst::zip_view with edge scenarios", "[edge]")
   }
 }
 
-SCENARIO("Testing gst::zip_view with constant containers", "[edge]")
+SCENARIO("Testing gst::ranges::zip_view with constant containers", "[edge]")
 {
   GIVEN("Constant containers")
   {
@@ -150,7 +150,7 @@ SCENARIO("Testing gst::zip_view with constant containers", "[edge]")
     std::list<char> const   lst = {'a', 'b', 'c'};
     std::deque<float> const deq = {1.1F, 2.2F, 3.3F};
 
-    auto gst_zipped = gst::zip(vec, lst, deq);
+    auto gst_zipped = gst::ranges::views::zip(vec, lst, deq);
 
     THEN("The zip_view should not be empty") { REQUIRE_FALSE(gst_zipped.empty()); }
     THEN("The size should be three") { REQUIRE(gst_zipped.size() == 3); }
@@ -182,7 +182,7 @@ SCENARIO("Testing gst::zip_view with constant containers", "[edge]")
   }
 }
 
-SCENARIO("Testing constant gst::zip_view with const containers", "[edge]")
+SCENARIO("Testing constant gst::ranges::zip_view with const containers", "[edge]")
 {
   GIVEN("Constant containers")
   {
@@ -190,7 +190,7 @@ SCENARIO("Testing constant gst::zip_view with const containers", "[edge]")
     std::list<char> const   lst = {'a', 'b', 'c'};
     std::deque<float> const deq = {1.1F, 2.2F, 3.3F};
 
-    gst::zip_view const gst_zipped = gst::zip(vec, lst, deq);
+    gst::ranges::zip_view const gst_zipped = gst::ranges::views::zip(vec, lst, deq);
 
     THEN("The zip_view should not be empty") { REQUIRE_FALSE(gst_zipped.empty()); }
     THEN("The size should be three") { REQUIRE(gst_zipped.size() == 3); }
@@ -222,7 +222,7 @@ SCENARIO("Testing constant gst::zip_view with const containers", "[edge]")
   }
 }
 
-SCENARIO("Testing constant gst::zip_view with non-const containers", "[edge]")
+SCENARIO("Testing constant gst::ranges::zip_view with non-const containers", "[edge]")
 {
   GIVEN("Non-const containers")
   {
@@ -230,7 +230,7 @@ SCENARIO("Testing constant gst::zip_view with non-const containers", "[edge]")
     std::list<char>   lst = {'a', 'b', 'c'};
     std::deque<float> deq = {1.1F, 2.2F, 3.3F};
 
-    gst::zip_view const gst_zipped = gst::zip(vec, lst, deq);
+    gst::ranges::zip_view const gst_zipped = gst::ranges::views::zip(vec, lst, deq);
 
     THEN("The zip_view should not be empty") { REQUIRE_FALSE(gst_zipped.empty()); }
     THEN("The size should be three") { REQUIRE(gst_zipped.size() == 3); }
@@ -271,7 +271,7 @@ SCENARIO("Reading elements using subscript operator", "[edge]")
 
     WHEN("we create a zip_view")
     {
-      auto const zip = gst::zip(v1, v2);
+      auto const zip = gst::ranges::views::zip(v1, v2);
 
       THEN("we can read the elements using the subscript operator")
       {
@@ -292,7 +292,7 @@ SCENARIO("Writing elements using subscript operator", "[edge]")
 
     WHEN("we create a zip_view")
     {
-      auto zip = gst::zip(v1, v2);
+      auto zip = gst::ranges::views::zip(v1, v2);
 
       THEN("we can write the elements using the subscript operator")
       {
@@ -310,7 +310,7 @@ SCENARIO("Writing elements using subscript operator", "[edge]")
 
     WHEN("we create a const zip_view")
     {
-      auto const zip = gst::zip(v1, v2);
+      auto const zip = gst::ranges::views::zip(v1, v2);
 
       THEN("we can write the elements using the subscript operator")
       {
@@ -328,7 +328,7 @@ SCENARIO("Writing elements using subscript operator", "[edge]")
   }
 }
 
-SCENARIO("Testing temporary gst::zip_view", "[edge]")
+SCENARIO("Testing temporary gst::ranges::zip_view", "[edge]")
 {
   using Vec = std::vector<int>;
   using Lst = std::list<char>;
@@ -342,10 +342,10 @@ SCENARIO("Testing temporary gst::zip_view", "[edge]")
 
     THEN("The zip_view should not have dangling references")
     {
-      REQUIRE(gst::zip(vec, lst, deq).size() == 3);
-      REQUIRE(std::get<0>(gst::zip(vec, lst, deq)[0]) == 1);
-      REQUIRE(std::get<1>(gst::zip(vec, lst, deq)[0]) == 'a');
-      REQUIRE(std::equal_to{}(std::get<2>(gst::zip(vec, lst, deq)[0]), 1.1F));
+      REQUIRE(gst::ranges::views::zip(vec, lst, deq).size() == 3);
+      REQUIRE(std::get<0>(gst::ranges::views::zip(vec, lst, deq)[0]) == 1);
+      REQUIRE(std::get<1>(gst::ranges::views::zip(vec, lst, deq)[0]) == 'a');
+      REQUIRE(std::equal_to{}(std::get<2>(gst::ranges::views::zip(vec, lst, deq)[0]), 1.1F));
     }
   }
 
@@ -353,26 +353,27 @@ SCENARIO("Testing temporary gst::zip_view", "[edge]")
   {
     THEN("The zip_view should not be empty")
     {
-      REQUIRE_FALSE(gst::zip(Vec{1, 2, 3}, Lst{'a', 'b', 'c'}).empty());
+      REQUIRE_FALSE(gst::ranges::views::zip(Vec{1, 2, 3}, Lst{'a', 'b', 'c'}).empty());
     }
     THEN("The size should be three")
     {
-      REQUIRE(gst::zip(Vec{1, 2, 3}, Lst{'a', 'b', 'c'}).size() == 3);
+      REQUIRE(gst::ranges::views::zip(Vec{1, 2, 3}, Lst{'a', 'b', 'c'}).size() == 3);
     }
     THEN("The front element should be the first elements of each container")
     {
-      REQUIRE(std::get<0>(gst::zip(Vec{1, 2, 3}, Lst{'a', 'b', 'c'}).front()) == 1);
-      REQUIRE(std::get<1>(gst::zip(Vec{1, 2, 3}, Lst{'a', 'b', 'c'}).front()) == 'a');
+      REQUIRE(std::get<0>(gst::ranges::views::zip(Vec{1, 2, 3}, Lst{'a', 'b', 'c'}).front()) == 1);
+      REQUIRE(std::get<1>(gst::ranges::views::zip(Vec{1, 2, 3}, Lst{'a', 'b', 'c'}).front()) ==
+              'a');
     }
     THEN("The back element should be the last elements of each container")
     {
-      REQUIRE(std::get<0>(gst::zip(Vec{1, 2, 3}, Lst{'a', 'b', 'c'}).back()) == 3);
-      REQUIRE(std::get<1>(gst::zip(Vec{1, 2, 3}, Lst{'a', 'b', 'c'}).back()) == 'c');
+      REQUIRE(std::get<0>(gst::ranges::views::zip(Vec{1, 2, 3}, Lst{'a', 'b', 'c'}).back()) == 3);
+      REQUIRE(std::get<1>(gst::ranges::views::zip(Vec{1, 2, 3}, Lst{'a', 'b', 'c'}).back()) == 'c');
     }
   }
 }
 
-SCENARIO("Testing gst::zip_view with modified containers", "[edge]")
+SCENARIO("Testing gst::ranges::zip_view with modified containers", "[edge]")
 {
   GIVEN("Containers that are modified after creating zip_view")
   {
@@ -380,7 +381,7 @@ SCENARIO("Testing gst::zip_view with modified containers", "[edge]")
     std::list<char>   lst = {'a', 'b', 'c'};
     std::deque<float> deq = {1.1F, 2.2F, 3.3F};
 
-    auto gst_zipped = gst::zip(vec, lst, deq);
+    auto gst_zipped = gst::ranges::views::zip(vec, lst, deq);
 
     THEN("The zip_view should reflect the modifications")
     {
