@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1765493440771,
+  "lastUpdate": 1765494010586,
   "repoUrl": "https://github.com/GuntramStrecha/zip_view",
   "entries": {
     "C++ Benchmark": [
@@ -638,6 +638,86 @@ window.BENCHMARK_DATA = {
             "name": "gst::ranges::views::zip Iterate",
             "value": 81.7644,
             "range": "± 8.52035",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "6010606+GuntramStrecha@users.noreply.github.com",
+            "name": "Guntram Strecha",
+            "username": "GuntramStrecha"
+          },
+          "committer": {
+            "email": "6010606+GuntramStrecha@users.noreply.github.com",
+            "name": "Guntram Strecha",
+            "username": "GuntramStrecha"
+          },
+          "distinct": true,
+          "id": "0880a637915a95ed4bfe3569fc75e5740edc041c",
+          "message": "Enhance unit test",
+          "timestamp": "2025-12-11T23:57:55+01:00",
+          "tree_id": "f6e12f57c2681b6161c0d26a549dad70f84817ae",
+          "url": "https://github.com/GuntramStrecha/zip_view/commit/0880a637915a95ed4bfe3569fc75e5740edc041c"
+        },
+        "date": 1765494009720,
+        "tool": "catch2",
+        "benches": [
+          {
+            "name": "std::ranges::views::zip Accumulate",
+            "value": 86.7553,
+            "range": "± 20.9074",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst::ranges::views::zip Accumulate",
+            "value": 88.3961,
+            "range": "± 19.6313",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "std::ranges::views::zip Transform",
+            "value": 289.746,
+            "range": "± 36.7385",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst::ranges::views::zip Transform",
+            "value": 292.859,
+            "range": "± 27.8034",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "std::ranges::views::zip Construct",
+            "value": 87.1478,
+            "range": "± 26.0583",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst::ranges::views::zip Construct",
+            "value": 93.7625,
+            "range": "± 27.0188",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "std::ranges::views::zip Iterate",
+            "value": 91.6842,
+            "range": "± 18.3706",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst::ranges::views::zip Iterate",
+            "value": 90.554,
+            "range": "± 19.5833",
             "unit": "us",
             "extra": "100 samples\n1 iterations"
           }
