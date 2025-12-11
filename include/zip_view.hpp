@@ -103,8 +103,8 @@ private:
 
   std::tuple<Containers&...> containers_;
 
-  using iterators               = std::tuple<decltype(std::begin(std::declval<Containers&>()))...>;
-  using references              = std::tuple<decltype(*std::begin(std::declval<Containers&>()))...>;
+  using iterators  = std::tuple<decltype(std::begin(std::declval<Containers&>()))...>;
+  using references = std::tuple<decltype(*std::begin(std::declval<Containers&>()))...>;
   using values     = std::tuple<
         typename std::remove_reference<decltype(*std::begin(std::declval<Containers&>()))>::type...>;
 
@@ -359,8 +359,8 @@ public:
   constexpr auto size() const -> std::size_t { return min_size(INDICES); }
   constexpr auto empty() const -> bool { return size() == 0; }
 
-  auto           front() const -> references { return subscripts(0, INDICES); }
-  auto           front() -> references { return subscripts(0, INDICES); }
+  auto front() const -> references { return subscripts(0, INDICES); }
+  auto front() -> references { return subscripts(0, INDICES); }
 
   auto back() const -> references
   {
