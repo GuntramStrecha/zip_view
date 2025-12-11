@@ -27,12 +27,8 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <iostream>
 #include <iterator>
-#include <list>
-#include <set>
 #include <tuple>
-#include <vector>
 
 namespace gst
 {
