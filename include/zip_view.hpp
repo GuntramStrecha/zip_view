@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <iostream>
 #include <iterator>
@@ -48,20 +49,6 @@ struct make_index_sequence : make_index_sequence<N - 1, N - 1, Is...>
 template <std::size_t... Is>
 struct make_index_sequence<0, Is...> : index_sequence<Is...>
 {};
-
-static constexpr auto min_value() -> long { return 0; }
-
-template <typename T>
-static constexpr auto min_value(T value) -> T
-{
-  return value;
-}
-
-template <typename T, typename... Ts>
-static constexpr auto min_value(T first, Ts... rest) -> T
-{
-  return std::min(first, min_value(rest...));
-}
 } // namespace detail
 
 namespace ranges
@@ -72,16 +59,16 @@ class zip_view
 private:
   std::tuple<Containers&...> containers_;
 
-  template <std::size_t... Is>
-  auto min_size(detail::index_sequence<Is...>) const -> std::ptrdiff_t
-  {
-    return detail::min_value(
-      std::distance(std::get<Is>(containers_).begin(), std::get<Is>(containers_).end())...);
-  }
-
   static constexpr auto INDICES = detail::make_index_sequence<sizeof...(Containers)>{};
   using iterators               = std::tuple<decltype(std::begin(std::declval<Containers&>()))...>;
   using references              = std::tuple<decltype(*std::begin(std::declval<Containers&>()))...>;
+
+  template <std::size_t... Is>
+  auto min_size(detail::index_sequence<Is...>) const -> std::ptrdiff_t
+  {
+    return std::min(
+      {std::distance(std::get<Is>(containers_).begin(), std::get<Is>(containers_).end())...});
+  }
 
   template <std::size_t... Is>
   auto begin_impl(detail::index_sequence<Is...>) const -> iterators
