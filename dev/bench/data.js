@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1765707338781,
+  "lastUpdate": 1765707975914,
   "repoUrl": "https://github.com/GuntramStrecha/zip_view",
   "entries": {
     "C++ Benchmark": [
@@ -878,6 +878,86 @@ window.BENCHMARK_DATA = {
             "name": "gst::ranges::views::zip Iterate",
             "value": 86.6941,
             "range": "± 18.1629",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "6010606+GuntramStrecha@users.noreply.github.com",
+            "name": "Guntram Strecha",
+            "username": "GuntramStrecha"
+          },
+          "committer": {
+            "email": "6010606+GuntramStrecha@users.noreply.github.com",
+            "name": "Guntram Strecha",
+            "username": "GuntramStrecha"
+          },
+          "distinct": true,
+          "id": "f29bbc7384c5dcfa6bda014ae2a1f6d6e9604378",
+          "message": "Add comprehensive STL algorithm tests for zip_view\n\nAdd extensive test coverage for standard algorithms including:\n- Sorting algorithms (sort, stable_sort, partial_sort, nth_element)\n- Searching algorithms (find, find_if, binary_search, etc.)\n- Partitioning algorithms (partition, stable_partition)\n- Modifying algorithms (reverse, rotate, replace, unique)\n- Non-modifying algorithms (all_of, any_of, none_of, equal, mismatch)\n- Min/max algorithms (min_element, max_element, minmax_element)\n- Permutation algorithms (next_permutation, prev_permutation)\n\nThese tests demonstrate that zip_view works correctly with standard\nalgorithms when the iterator category requirements are met.",
+          "timestamp": "2025-12-14T11:24:10+01:00",
+          "tree_id": "9bbfa729ab9b48740b71e1f942c0023b00351f6e",
+          "url": "https://github.com/GuntramStrecha/zip_view/commit/f29bbc7384c5dcfa6bda014ae2a1f6d6e9604378"
+        },
+        "date": 1765707975160,
+        "tool": "catch2",
+        "benches": [
+          {
+            "name": "std::ranges::views::zip Accumulate",
+            "value": 84.0294,
+            "range": "± 13.3817",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst::ranges::views::zip Accumulate",
+            "value": 87.3403,
+            "range": "± 13.7544",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "std::ranges::views::zip Transform",
+            "value": 220.402,
+            "range": "± 44.1256",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst::ranges::views::zip Transform",
+            "value": 220.167,
+            "range": "± 42.4557",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "std::ranges::views::zip Construct",
+            "value": 68.7985,
+            "range": "± 21.7977",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst::ranges::views::zip Construct",
+            "value": 67.6957,
+            "range": "± 17.7973",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "std::ranges::views::zip Iterate",
+            "value": 84.5977,
+            "range": "± 13.4403",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst::ranges::views::zip Iterate",
+            "value": 83.6027,
+            "range": "± 15.9517",
             "unit": "us",
             "extra": "100 samples\n1 iterations"
           }
