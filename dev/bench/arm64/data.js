@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1765819144068,
+  "lastUpdate": 1765819883406,
   "repoUrl": "https://github.com/GuntramStrecha/zip_view",
   "entries": {
     "C++ Benchmark (ARM64)": [
@@ -534,6 +534,184 @@ window.BENCHMARK_DATA = {
             "name": "gst zip iterate 4 ranges",
             "value": 110.777,
             "range": "± 3.46073",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "6010606+GuntramStrecha@users.noreply.github.com",
+            "name": "Guntram Strecha",
+            "username": "GuntramStrecha"
+          },
+          "committer": {
+            "email": "6010606+GuntramStrecha@users.noreply.github.com",
+            "name": "Guntram Strecha",
+            "username": "GuntramStrecha"
+          },
+          "distinct": true,
+          "id": "70e239b75581251136cc623bf0066b188caf18d2",
+          "message": "Add arm support for CI",
+          "timestamp": "2025-12-15T18:28:54+01:00",
+          "tree_id": "5042959cf9bf18b2f1b6d5e363204c1003ee88ef",
+          "url": "https://github.com/GuntramStrecha/zip_view/commit/70e239b75581251136cc623bf0066b188caf18d2"
+        },
+        "date": 1765819882565,
+        "tool": "catch2",
+        "benches": [
+          {
+            "name": "std zip accumulate",
+            "value": 150.416,
+            "range": "± 4.23819",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst zip accumulate",
+            "value": 149.943,
+            "range": "± 4.36251",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "std zip transform",
+            "value": 227.984,
+            "range": "± 9.62273",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst zip transform",
+            "value": 232.043,
+            "range": "± 11.1056",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "std zip + sort",
+            "value": 62.4963,
+            "range": "± 0.754212",
+            "unit": "ns",
+            "extra": "100 samples\n505 iterations"
+          },
+          {
+            "name": "gst zip + sort",
+            "value": 48.8594,
+            "range": "± 0.4197",
+            "unit": "ns",
+            "extra": "100 samples\n645 iterations"
+          },
+          {
+            "name": "std zip + find_if",
+            "value": 59.0523,
+            "range": "± 1.12492",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst zip + find_if",
+            "value": 14.4919,
+            "range": "± 350.87",
+            "unit": "us",
+            "extra": "100 samples\n3 iterations"
+          },
+          {
+            "name": "std zip + copy",
+            "value": 91.6661,
+            "range": "± 2.49957",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst zip + copy",
+            "value": 30.0232,
+            "range": "± 1.27449",
+            "unit": "us",
+            "extra": "100 samples\n2 iterations"
+          },
+          {
+            "name": "std zip construct",
+            "value": 60.874,
+            "range": "± 6.72857",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst zip construct",
+            "value": 51.4052,
+            "range": "± 3.00461",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "std zip bidi iterate",
+            "value": 153.207,
+            "range": "± 8.9264",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst zip bidi iterate",
+            "value": 411.041,
+            "range": "± 11.8544",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "std zip fwd iterate",
+            "value": 65.4617,
+            "range": "± 1.59977",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst zip fwd iterate",
+            "value": 67.6144,
+            "range": "± 10.1622",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "std zip rev iterate",
+            "value": 60.5352,
+            "range": "± 1.23424",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst zip rev iterate",
+            "value": 60.9197,
+            "range": "± 1.26782",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "std zip iterate",
+            "value": 151.942,
+            "range": "± 6.49988",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst zip iterate",
+            "value": 148.892,
+            "range": "± 3.45907",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "std zip iterate 4 ranges",
+            "value": 144.392,
+            "range": "± 1.17033",
+            "unit": "us",
+            "extra": "100 samples\n1 iterations"
+          },
+          {
+            "name": "gst zip iterate 4 ranges",
+            "value": 110.394,
+            "range": "± 2.19176",
             "unit": "us",
             "extra": "100 samples\n1 iterations"
           }
