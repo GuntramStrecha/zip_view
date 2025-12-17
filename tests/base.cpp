@@ -169,7 +169,7 @@ SCENARIO("Testing gst::ranges::zip_view member functions", "zip_view")
     THEN("The zip_view shall not be empty") { REQUIRE_FALSE(gst_zipped.empty()); }
     THEN("The size shall be equal to the smallest container size")
     {
-      REQUIRE(gst_zipped.size() == 3);
+      REQUIRE(gst_zipped.size() == std_zipped.size());
     }
 
     THEN("The front element shall be the first elements of each container")
@@ -197,7 +197,10 @@ SCENARIO("Testing gst::ranges::zip_view member functions", "zip_view")
       REQUIRE(std::equal_to{}(std::get<2>(gst_elem), 2.2F));
     }
 
-    THEN("The conversion operator shall return true") { REQUIRE(static_cast<bool>(gst_zipped)); }
+    THEN("The conversion operator shall return true")
+    {
+      REQUIRE(static_cast<bool>(gst_zipped) == static_cast<bool>(std_zipped));
+    }
   }
 
   GIVEN("Containers of different sizes")
@@ -210,10 +213,12 @@ SCENARIO("Testing gst::ranges::zip_view member functions", "zip_view")
     auto std_zipped = std::ranges::views::zip(vec, lst, deq);
 
     THEN("The zip_view shall not be empty") { REQUIRE_FALSE(gst_zipped.empty()); }
+
     THEN("The size shall be equal to the smallest container size")
     {
-      REQUIRE(gst_zipped.size() == 2);
+      REQUIRE(gst_zipped.size() == std_zipped.size());
     }
+
     THEN("The front element shall be the first elements of each container")
     {
       auto gst_front = gst_zipped.front();
@@ -239,6 +244,9 @@ SCENARIO("Testing gst::ranges::zip_view member functions", "zip_view")
       REQUIRE(std::equal_to{}(std::get<2>(gst_elem), 2.2F));
     }
 
-    THEN("The conversion operator shall return true") { REQUIRE(static_cast<bool>(gst_zipped)); }
+    THEN("The conversion operator shall return correct boolean value")
+    {
+      REQUIRE(static_cast<bool>(gst_zipped) == static_cast<bool>(std_zipped));
+    }
   }
 }
