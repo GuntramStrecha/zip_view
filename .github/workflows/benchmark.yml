@@ -5,6 +5,7 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+    types: [ opened, synchronize, reopened ]
   workflow_dispatch:  # Allow manual triggering
 
 env:
@@ -12,7 +13,37 @@ env:
 
 jobs:
   benchmark:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+            build_dir: build
+            cmake_flags: ""
+            cxx_compiler: g++
+            run_prefix: ""
+          - arch: x86_32
+            runner: ubuntu-latest
+            build_dir: build-x86_32
+            cmake_flags: "-DCMAKE_CXX_FLAGS=-m32"
+            cxx_compiler: g++
+            run_prefix: ""
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            build_dir: build-arm
+            cmake_flags: ""
+            cxx_compiler: g++
+            run_prefix: ""
+          - arch: arm32
+            runner: ubuntu-24.04-arm
+            build_dir: build-arm32
+            cmake_flags: "-DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=arm"
+            cxx_compiler: arm-linux-gnueabihf-g++
+            run_prefix: "qemu-arm -L /usr/arm-linux-gnueabihf"
+
+    runs-on: ${{ matrix.runner }}
+    name: benchmark-${{ matrix.arch }}
 
     steps:
     - uses: actions/checkout@v4
@@ -20,58 +51,100 @@ jobs:
     - name: Set up CMake
       uses: lukka/get-cmake@latest
 
+    - name: Install x86 32-bit toolchain and runtime
+      if: matrix.arch == 'x86_32'
+      run: |
+        sudo dpkg --add-architecture i386
+        sudo apt-get update
+        sudo apt-get install -y g++-multilib libc6:i386 libstdc++6:i386
+
+    - name: Install ARM 32-bit toolchain and runtime
+      if: matrix.arch == 'arm32'
+      run: |
+        sudo dpkg --add-architecture armhf
+        sudo apt-get update
+        sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf qemu-user libc6-armhf-cross libstdc++6-armhf-cross
+
     - name: Configure CMake
       run: >
-        cmake -B ${{ github.workspace }}/build
-        -DCMAKE_CXX_COMPILER=g++
+        cmake -B ${{ github.workspace }}/${{ matrix.build_dir }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }}
         -DCMAKE_CXX_STANDARD=23
         -DCMAKE_CXX_STANDARD_REQUIRED=True
         -DCMAKE_BUILD_TYPE=Release
+        ${{ matrix.cmake_flags }}
         -S ${{ github.workspace }}
 
     - name: Build Benchmarks
-      run: cmake --build ${{ github.workspace }}/build --config Release --target ZipViewBenchmark
+      run: cmake --build ${{ github.workspace }}/${{ matrix.build_dir }} --config Release --target ZipViewBenchmark
 
     - name: Run Benchmarks
-      id: run-benchmarks
       run: |
-        cd ${{ github.workspace }}/build
-        ./benchmarks/ZipViewBenchmark --reporter console::out=-::colour-mode=none 2>&1 | tee benchmark_results.txt
-
-    - name: Store Benchmark Result
-      uses: benchmark-action/github-action-benchmark@v1
-      with:
-        name: C++ Benchmark
-        tool: 'catch2'
-        output-file-path: ${{ github.workspace }}/build/benchmark_results.txt
-        # GitHub Pages branch to store data
-        gh-pages-branch: gh-pages
-        benchmark-data-dir-path: dev/bench
-        # Comment on PR with comparison
-        comment-on-alert: true
-        alert-threshold: '110%'
-        fail-on-alert: false
-        # Auto-push to gh-pages (only on main branch pushes)
-        auto-push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        # Keep historical data (default is 20)
-        max-items-in-chart: 999
+        cd ${{ github.workspace }}/${{ matrix.build_dir }}
+        ${{ matrix.run_prefix }} ./benchmarks/ZipViewBenchmark --reporter console::out=-::colour-mode=none 2>&1 | tee benchmark_results.txt
 
     - name: Upload Benchmark Results
       uses: actions/upload-artifact@v4
       with:
-        name: benchmark-results
-        path: ${{ github.workspace }}/build/benchmark_results.txt
+        name: benchmark-results-${{ matrix.arch }}
+        path: ${{ github.workspace }}/${{ matrix.build_dir }}/benchmark_results.txt
 
-    - name: Extract Performance Summary
+  merge-results:
+    needs: benchmark
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download all benchmark artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: benchmark-results-*
+        path: artifacts
+        merge-multiple: false
+
+    - name: Merge benchmark results
       run: |
-        cd ${{ github.workspace }}/build
-        echo "## Benchmark Results Summary" > benchmark_summary.md
+        mkdir -p merged
+        echo "# Combined Benchmark Results" > merged/benchmark_results_merged.txt
+        echo "Generated: $(date -u)" >> merged/benchmark_results_merged.txt
+        echo "" >> merged/benchmark_results_merged.txt
+
+        for arch in x86_64 x86_32 arm64 arm32; do
+          if [ -f "artifacts/benchmark-results-${arch}/benchmark_results.txt" ]; then
+            echo "========================================" >> merged/benchmark_results_merged.txt
+            echo "Architecture: ${arch}" >> merged/benchmark_results_merged.txt
+            echo "========================================" >> merged/benchmark_results_merged.txt
+            cat "artifacts/benchmark-results-${arch}/benchmark_results.txt" >> merged/benchmark_results_merged.txt
+            echo "" >> merged/benchmark_results_merged.txt
+          fi
+        done
+
+        cat merged/benchmark_results_merged.txt
+
+    - name: Create summary markdown
+      run: |
+        cd merged
+        echo "## Benchmark Results Summary (All Architectures)" > benchmark_summary.md
         echo "" >> benchmark_summary.md
-        echo '```' >> benchmark_summary.md
-        grep -A 5 "benchmark name" benchmark_results.txt | head -100 >> benchmark_summary.md || echo "No benchmark data found" >> benchmark_summary.md
-        echo '```' >> benchmark_summary.md
+
+        for arch in x86_64 x86_32 arm64 arm32; do
+          if [ -f "../artifacts/benchmark-results-${arch}/benchmark_results.txt" ]; then
+            echo "### ${arch}" >> benchmark_summary.md
+            echo '```' >> benchmark_summary.md
+            grep -A 5 "benchmark name" "../artifacts/benchmark-results-${arch}/benchmark_results.txt" | head -100 >> benchmark_summary.md || echo "No benchmark data found" >> benchmark_summary.md
+            echo '```' >> benchmark_summary.md
+            echo "" >> benchmark_summary.md
+          fi
+        done
+
         cat benchmark_summary.md
+
+    - name: Upload merged results
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-results-merged
+        path: |
+          merged/benchmark_results_merged.txt
+          merged/benchmark_summary.md
 
     - name: Comment PR with Benchmark Results
       if: github.event_name == 'pull_request'
@@ -80,7 +153,7 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           const fs = require('fs');
-          const summary = fs.readFileSync('${{ github.workspace }}/build/benchmark_summary.md', 'utf8');
+          const summary = fs.readFileSync('merged/benchmark_summary.md', 'utf8');
 
           github.rest.issues.createComment({
             issue_number: context.issue.number,
@@ -92,9 +165,36 @@ jobs:
     - name: Add to Job Summary
       if: always()
       run: |
-        cd ${{ github.workspace }}/build
-        echo "# Benchmark Results" >> $GITHUB_STEP_SUMMARY
+        echo "# Combined Benchmark Results (All Architectures)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo '```' >> $GITHUB_STEP_SUMMARY
-        cat benchmark_results.txt >> $GITHUB_STEP_SUMMARY
+        cat merged/benchmark_results_merged.txt >> $GITHUB_STEP_SUMMARY
         echo '```' >> $GITHUB_STEP_SUMMARY
+
+  push-results:
+    needs: merge-results
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download merged benchmark results
+      uses: actions/download-artifact@v4
+      with:
+        name: benchmark-results-merged
+        path: artifacts
+
+    - name: Store benchmark results
+      uses: benchmark-action/github-action-benchmark@v1
+      with:
+        name: C++ Benchmark
+        tool: 'catch2'
+        output-file-path: artifacts/benchmark_results_merged.txt
+        gh-pages-branch: gh-pages
+        benchmark-data-dir-path: dev/bench
+        auto-push: true
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        max-items-in-chart: 999
