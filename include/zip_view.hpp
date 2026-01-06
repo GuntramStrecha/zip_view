@@ -30,6 +30,7 @@
 #include <iterator>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 
 namespace gst
 {
@@ -87,10 +88,36 @@ public:
                               std::forward_iterator_tag>::type>::type;
 };
 
-// Main alias for computing zip iterator category
 template <typename... Iters>
 using zip_iterator_category = typename zip_iterator_category_impl<Iters...>::type;
 
+template <typename T>
+using store_t = typename std::
+  conditional<std::is_lvalue_reference<T>::value, T, typename std::decay<T>::type>::type;
+
+template <typename T>
+auto as_lvalue(T& t) noexcept -> T&
+{
+  return t;
+}
+
+template <typename T>
+auto as_lvalue(T const& t) noexcept -> T const&
+{
+  return t;
+}
+
+template <typename T, typename std::enable_if<!std::is_lvalue_reference<T>::value, int>::type = 0>
+auto as_lvalue(store_t<T>& t) noexcept -> store_t<T>&
+{
+  return t;
+}
+
+template <typename T, typename std::enable_if<!std::is_lvalue_reference<T>::value, int>::type = 0>
+auto as_lvalue(store_t<T> const& t) noexcept -> store_t<T> const&
+{
+  return t;
+}
 } // namespace detail
 
 namespace ranges
@@ -101,61 +128,91 @@ class zip_view
 private:
   static constexpr auto INDICES = detail::make_index_sequence<sizeof...(Containers)>{};
 
-  std::tuple<Containers&...> containers_;
+  using storage_tuple = std::tuple<detail::store_t<Containers>...>;
+  storage_tuple containers_;
 
-  using iterators  = std::tuple<decltype(std::begin(std::declval<Containers&>()))...>;
-  using references = std::tuple<decltype(*std::begin(std::declval<Containers&>()))...>;
-  using values     = std::tuple<
-        typename std::remove_reference<decltype(*std::begin(std::declval<Containers&>()))>::type...>;
+  // Iterator/reference/value types
+  using iterators_mut   = std::tuple<decltype(std::begin(
+    detail::as_lvalue<Containers>(std::declval<detail::store_t<Containers>&>())))...>;
+  using iterators_const = std::tuple<decltype(std::begin(
+    detail::as_lvalue<Containers>(std::declval<detail::store_t<Containers> const&>())))...>;
+
+  // References via non-const access to stored containers
+  using references       = std::tuple<decltype(*std::begin(
+    detail::as_lvalue<Containers>(std::declval<detail::store_t<Containers>&>())))...>;
+  // References via const access to stored containers
+  using const_references = std::tuple<decltype(*std::begin(
+    detail::as_lvalue<Containers>(std::declval<detail::store_t<Containers> const&>())))...>;
+
+  using values = std::tuple<typename std::remove_reference<decltype(*std::begin(
+    detail::as_lvalue<Containers>(std::declval<detail::store_t<Containers>&>())))>::type...>;
 
   template <std::size_t... Is>
   auto min_size(detail::index_sequence<Is...>) const -> std::size_t
   {
     return static_cast<std::size_t>(std::min(
-      {std::distance(std::get<Is>(containers_).begin(), std::get<Is>(containers_).end())...}));
+      {std::distance(std::begin(detail::as_lvalue<Containers>(std::get<Is>(containers_))),
+                     std::end(detail::as_lvalue<Containers>(std::get<Is>(containers_))))...}));
   }
 
   template <std::size_t... Is>
-  auto begin_impl(detail::index_sequence<Is...>) const -> iterators
+  auto begin_impl(detail::index_sequence<Is...>) -> iterators_mut
   {
-    return std::make_tuple(std::begin(std::get<Is>(containers_))...);
+    return std::make_tuple(std::begin(detail::as_lvalue<Containers>(std::get<Is>(containers_)))...);
   }
 
   template <std::size_t... Is>
-  auto end_impl(detail::index_sequence<Is...> is) const -> iterators
+  auto begin_impl(detail::index_sequence<Is...>) const -> iterators_const
   {
-    return std::make_tuple(std::next(std::begin(std::get<Is>(containers_)),
-                                     static_cast<std::ptrdiff_t>(min_size(is)))...);
+    return std::make_tuple(std::begin(detail::as_lvalue<Containers>(std::get<Is>(containers_)))...);
+  }
+
+  template <std::size_t... Is>
+  auto end_impl(detail::index_sequence<Is...> is) -> iterators_mut
+  {
+    return std::make_tuple(
+      std::next(std::begin(detail::as_lvalue<Containers>(std::get<Is>(containers_))),
+                static_cast<std::ptrdiff_t>(min_size(is)))...);
+  }
+
+  template <std::size_t... Is>
+  auto end_impl(detail::index_sequence<Is...> is) const -> iterators_const
+  {
+    return std::make_tuple(
+      std::next(std::begin(detail::as_lvalue<Containers>(std::get<Is>(containers_))),
+                static_cast<std::ptrdiff_t>(min_size(is)))...);
   }
 
   template <std::size_t... Is>
   auto subscripts(std::ptrdiff_t const index, detail::index_sequence<Is...>) -> references
   {
-    return std::tie(*std::next(std::begin(std::get<Is>(containers_)), index)...);
+    return std::tie(
+      *std::next(std::begin(detail::as_lvalue<Containers>(std::get<Is>(containers_))), index)...);
   }
 
   template <std::size_t... Is>
-  auto subscripts(std::ptrdiff_t const index, detail::index_sequence<Is...>) const -> references
+  auto subscripts(std::ptrdiff_t const index,
+                  detail::index_sequence<Is...>) const -> const_references
   {
-    return std::tie(*std::next(std::begin(std::get<Is>(containers_)), index)...);
+    return std::tie(
+      *std::next(std::begin(detail::as_lvalue<Containers>(std::get<Is>(containers_))), index)...);
   }
 
 public:
-  class iterator
+  template <typename IterTuple>
+  class basic_iterator
   {
   public:
-    // Type aliases - must be public and before private members that use them
-    using iter_category =
-      detail::zip_iterator_category<decltype(std::begin(std::declval<Containers&>()))...>;
+    using iter_category     = detail::zip_iterator_category<decltype(std::begin(
+      detail::as_lvalue<Containers>(std::declval<detail::store_t<Containers>&>())))...>;
     using iterator_category = iter_category;
     using value_type        = values;
     using size_type         = std::size_t;
     using difference_type   = std::ptrdiff_t;
     using pointer           = value_type*;
-    using reference         = references;
 
   private:
-    iterators iters_;
+    IterTuple iters_;
 
     static constexpr bool is_bidirectional =
       detail::is_at_least_bidirectional<iter_category>::value;
@@ -181,142 +238,151 @@ public:
     }
 
     template <std::size_t... Is>
-    auto dereference(detail::index_sequence<Is...>) -> references
+    using deref_tuple =
+      std::tuple<decltype(*std::declval<typename std::tuple_element<Is, IterTuple>::type&>())...>;
+
+    template <std::size_t... Is>
+    static auto reference_for(detail::index_sequence<Is...>) -> deref_tuple<Is...>;
+
+  private:
+    template <std::size_t... Is>
+    auto dereference(detail::index_sequence<Is...>) -> deref_tuple<Is...>
     {
       return std::tie(*std::get<Is>(iters_)...);
     }
 
     template <std::size_t... Is>
-    auto dereference(detail::index_sequence<Is...>) const -> references
+    auto dereference(detail::index_sequence<Is...>) const -> deref_tuple<Is...>
     {
       return std::tie(*std::get<Is>(iters_)...);
     }
 
   public:
-    iterator() = default;
-    iterator(iterators iters) : iters_(iters) {}
+    using reference =
+      decltype(reference_for(detail::make_index_sequence<std::tuple_size<IterTuple>::value>{}));
 
-    auto operator++() -> iterator&
+    basic_iterator() = default;
+    explicit basic_iterator(IterTuple iters) : iters_(std::move(iters)) {}
+
+    auto operator++() -> basic_iterator&
     {
       increment(INDICES);
       return *this;
     }
 
-    auto operator++(int) -> iterator
+    auto operator++(int) -> basic_iterator
     {
-      iterator tmp = *this;
+      basic_iterator tmp = *this;
       increment(INDICES);
       return tmp;
     }
 
-    references operator*() { return dereference(INDICES); }
-    references operator*() const { return dereference(INDICES); }
+    auto operator*() -> reference { return dereference(INDICES); }
+    auto operator*() const -> reference { return dereference(INDICES); }
 
-    auto operator==(iterator const& other) const -> bool { return iters_ == other.iters_; }
-    auto operator!=(iterator const& other) const -> bool { return !(*this == other); }
+    auto operator==(basic_iterator const& other) const -> bool { return iters_ == other.iters_; }
+    auto operator!=(basic_iterator const& other) const -> bool { return !(*this == other); }
 
-    // Bidirectional iterator operations (available when at least bidirectional)
     template <bool B = is_bidirectional, typename std::enable_if<B, int>::type = 0>
-    auto operator--() -> iterator&
+    auto operator--() -> basic_iterator&
     {
       decrement(INDICES);
       return *this;
     }
 
     template <bool B = is_bidirectional, typename std::enable_if<B, int>::type = 0>
-    auto operator--(int) -> iterator
+    auto operator--(int) -> basic_iterator
     {
-      iterator tmp = *this;
+      basic_iterator tmp = *this;
       decrement(INDICES);
       return tmp;
     }
 
-    // Random access iterator operations (available when random access)
     template <bool B = is_random_access, typename std::enable_if<B, int>::type = 0>
-    auto operator+=(difference_type const n) -> iterator&
+    auto operator+=(difference_type const n) -> basic_iterator&
     {
       advance_by(n, INDICES);
       return *this;
     }
 
     template <bool B = is_random_access, typename std::enable_if<B, int>::type = 0>
-    auto operator-=(difference_type const n) -> iterator&
+    auto operator-=(difference_type const n) -> basic_iterator&
     {
       advance_by(-n, INDICES);
       return *this;
     }
 
     template <bool B = is_random_access, typename std::enable_if<B, int>::type = 0>
-    auto operator+(difference_type const n) const -> iterator
+    auto operator+(difference_type const n) const -> basic_iterator
     {
-      iterator tmp  = *this;
-      tmp          += n;
+      basic_iterator tmp  = *this;
+      tmp                += n;
       return tmp;
     }
 
     template <bool B = is_random_access, typename std::enable_if<B, int>::type = 0>
-    auto operator-(difference_type const n) const -> iterator
+    auto operator-(difference_type const n) const -> basic_iterator
     {
-      iterator tmp  = *this;
-      tmp          -= n;
+      basic_iterator tmp  = *this;
+      tmp                -= n;
       return tmp;
     }
 
     template <bool B = is_random_access, typename std::enable_if<B, int>::type = 0>
-    auto operator-(iterator const& other) const -> difference_type
+    auto operator-(basic_iterator const& other) const -> difference_type
     {
       return std::distance(std::get<0>(other.iters_), std::get<0>(iters_));
     }
 
     template <bool B = is_random_access, typename std::enable_if<B, int>::type = 0>
-    auto operator[](difference_type const n) const -> references
+    auto operator[](difference_type const n) const -> reference
     {
-      iterator tmp  = *this;
-      tmp          += n;
+      basic_iterator tmp  = *this;
+      tmp                += n;
       return *tmp;
     }
 
     template <bool B = is_random_access, typename std::enable_if<B, int>::type = 0>
-    auto operator<(iterator const& other) const -> bool
+    auto operator<(basic_iterator const& other) const -> bool
     {
       return std::get<0>(iters_) < std::get<0>(other.iters_);
     }
 
     template <bool B = is_random_access, typename std::enable_if<B, int>::type = 0>
-    auto operator>(iterator const& other) const -> bool
+    auto operator>(basic_iterator const& other) const -> bool
     {
       return other < *this;
     }
 
     template <bool B = is_random_access, typename std::enable_if<B, int>::type = 0>
-    auto operator<=(iterator const& other) const -> bool
+    auto operator<=(basic_iterator const& other) const -> bool
     {
       return !(other < *this);
     }
 
     template <bool B = is_random_access, typename std::enable_if<B, int>::type = 0>
-    auto operator>=(iterator const& other) const -> bool
+    auto operator>=(basic_iterator const& other) const -> bool
     {
       return !(*this < other);
     }
 
     // Friend function for n + iterator
     template <bool B = is_random_access, typename std::enable_if<B, int>::type = 0>
-    friend auto operator+(difference_type const n, iterator const& it) -> iterator
+    friend auto operator+(difference_type const n, basic_iterator const& it) -> basic_iterator
     {
       return it + n;
     }
 
     // Custom iter_swap for proper swapping of zipped elements
-    friend auto iter_swap(iterator const& lhs, iterator const& rhs) -> void
+    friend auto iter_swap(basic_iterator const& lhs, basic_iterator const& rhs) -> void
     {
       iter_swap_impl(lhs, rhs, INDICES);
     }
 
   private:
     template <std::size_t... Is>
-    static auto iter_swap_impl(iterator const& lhs,
-                               iterator const& rhs,
+    static auto iter_swap_impl(basic_iterator const& lhs,
+                               basic_iterator const& rhs,
                                detail::index_sequence<Is...>) -> void
     {
       using std::swap;
@@ -325,9 +391,14 @@ public:
     }
   };
 
-  zip_view(Containers&... containers) : containers_(containers...) {}
-  zip_view(Containers&&... containers) : containers_(std::tie(containers...)) {}
-  zip_view() = default;
+  using iterator       = basic_iterator<iterators_mut>;
+  using const_iterator = basic_iterator<iterators_const>;
+
+  template <typename... Cs,
+            typename std::enable_if<sizeof...(Cs) == sizeof...(Containers), int>::type = 0>
+  explicit zip_view(Cs&&... containers) : containers_(std::forward<Cs>(containers)...)
+  {}
+
   zip_view(zip_view const& other) : containers_(other.containers_) {}
   zip_view(zip_view&& other) noexcept : containers_(std::move(other.containers_)) {}
   ~zip_view() = default;
@@ -343,7 +414,7 @@ public:
     return *this;
   }
   operator bool() const { return !empty(); }
-  auto operator[](typename iterator::difference_type const idx) const -> references
+  auto operator[](typename iterator::difference_type const idx) const -> const_references
   {
     return subscripts(idx, INDICES);
   }
@@ -352,17 +423,17 @@ public:
     return subscripts(idx, INDICES);
   }
 
-  auto           begin() const -> iterator { return iterator(begin_impl(INDICES)); }
+  auto           begin() const -> const_iterator { return const_iterator(begin_impl(INDICES)); }
   auto           begin() -> iterator { return iterator(begin_impl(INDICES)); }
-  auto           end() const -> iterator { return iterator(end_impl(INDICES)); }
+  auto           end() const -> const_iterator { return const_iterator(end_impl(INDICES)); }
   auto           end() -> iterator { return iterator(end_impl(INDICES)); }
   constexpr auto size() const -> std::size_t { return min_size(INDICES); }
   constexpr auto empty() const -> bool { return size() == 0; }
 
-  auto front() const -> references { return subscripts(0, INDICES); }
+  auto front() const -> const_references { return subscripts(0, INDICES); }
   auto front() -> references { return subscripts(0, INDICES); }
 
-  auto back() const -> references
+  auto back() const -> const_references
   {
     return subscripts(static_cast<typename iterator::difference_type>(size() - 1), INDICES);
   }
@@ -372,26 +443,20 @@ public:
   }
 };
 
-#if __cplusplus >= 201703L
-template <typename... Containers>
-explicit zip_view(Containers&... containers) -> zip_view<Containers...>;
-
-template <typename... Containers>
-explicit zip_view(Containers&&... containers) -> zip_view<Containers...>;
-#endif
-
 namespace views
 {
 template <typename... Containers>
-auto zip(Containers&... containers) -> zip_view<Containers...>
+auto zip(Containers&&... containers) -> zip_view<Containers&&...>
 {
-  return zip_view<Containers...>(containers...);
+  return zip_view<Containers&&...>(std::forward<Containers>(containers)...);
 }
 
-template <typename... Containers>
-auto zip(Containers&&... containers) -> zip_view<Containers...>
+template <typename... Ts>
+auto zip(std::initializer_list<Ts>&&... initializer_list)
+  -> zip_view<std::initializer_list<Ts>&&...>
 {
-  return zip_view<Containers...>(std::forward<Containers>(containers)...);
+  return zip_view<std::initializer_list<Ts>&&...>(
+    std::forward<std::initializer_list<Ts>>(initializer_list)...);
 }
 
 } // namespace views
