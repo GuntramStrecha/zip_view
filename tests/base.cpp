@@ -176,25 +176,19 @@ SCENARIO("Testing gst::ranges::zip_view member functions", "zip_view")
     {
       auto gst_front = gst_zipped.front();
       auto std_front = std_zipped.front();
-      REQUIRE(std::get<0>(gst_front) == std::get<0>(std_front));
-      REQUIRE(std::get<1>(gst_front) == std::get<1>(std_front));
-      REQUIRE(std::equal_to{}(std::get<2>(gst_front), std::get<2>(std_front)));
+      REQUIRE((gst_front == std_front));
     }
 
     THEN("The back element shall be the last elements of each container")
     {
       auto gst_back = gst_zipped.back();
-      REQUIRE(std::get<0>(gst_back) == 3);
-      REQUIRE(std::get<1>(gst_back) == 'c');
-      REQUIRE(std::equal_to{}(std::get<2>(gst_back), 3.3F));
+      REQUIRE((gst_back == std::make_tuple(3, 'c', 3.3F)));
     }
 
     THEN("The subscript operator shall return the correct elements")
     {
       auto gst_elem = gst_zipped[1];
-      REQUIRE(std::get<0>(gst_elem) == 2);
-      REQUIRE(std::get<1>(gst_elem) == 'b');
-      REQUIRE(std::equal_to{}(std::get<2>(gst_elem), 2.2F));
+      REQUIRE((gst_elem == std::make_tuple(2, 'b', 2.2F)));
     }
 
     THEN("The conversion operator shall return true")
@@ -223,25 +217,19 @@ SCENARIO("Testing gst::ranges::zip_view member functions", "zip_view")
     {
       auto gst_front = gst_zipped.front();
       auto std_front = std_zipped.front();
-      REQUIRE(std::get<0>(gst_front) == std::get<0>(std_front));
-      REQUIRE(std::get<1>(gst_front) == std::get<1>(std_front));
-      REQUIRE(std::equal_to{}(std::get<2>(gst_front), std::get<2>(std_front)));
+      REQUIRE((gst_front == std_front));
     }
 
     THEN("The back element shall be the last elements of each container up to the smallest size")
     {
       auto gst_back = gst_zipped.back();
-      REQUIRE(std::get<0>(gst_back) == 2);
-      REQUIRE(std::get<1>(gst_back) == 'b');
-      REQUIRE(std::equal_to{}(std::get<2>(gst_back), 2.2F));
+      REQUIRE((gst_back == std::make_tuple(2, 'b', 2.2F)));
     }
 
     THEN("The subscript operator shall return the correct elements")
     {
       auto gst_elem = gst_zipped[1];
-      REQUIRE(std::get<0>(gst_elem) == 2);
-      REQUIRE(std::get<1>(gst_elem) == 'b');
-      REQUIRE(std::equal_to{}(std::get<2>(gst_elem), 2.2F));
+      REQUIRE((gst_elem == std::make_tuple(2, 'b', 2.2F)));
     }
 
     THEN("The conversion operator shall return correct boolean value")
@@ -265,19 +253,24 @@ SCENARIO("Testing gst::ranges::zip_view member functions", "zip_view")
       auto             gst_zipped = gst::ranges::views::zip(vec);
       auto             std_zipped = std::ranges::views::zip(vec);
       auto             elem       = gst_zipped[2];
-      REQUIRE(std::get<0>(elem) == 3);
       REQUIRE(std::get<0>(elem) == std::get<0>(std_zipped[2]));
     }
 
-    THEN("front() and back() work correctly")
+    THEN("front() returns correct element")
     {
       std::vector<int> vec        = {1, 2, 3, 4, 5};
       auto             gst_zipped = gst::ranges::views::zip(vec);
       REQUIRE(std::get<0>(gst_zipped.front()) == 1);
+    }
+
+    THEN("back() returns correct element")
+    {
+      std::vector<int> vec        = {1, 2, 3, 4, 5};
+      auto             gst_zipped = gst::ranges::views::zip(vec);
       REQUIRE(std::get<0>(gst_zipped.back()) == 5);
     }
 
-    THEN("Can iterate and modify through single container zip")
+    THEN("Can iterate and modify elements")
     {
       std::vector<int> vec        = {1, 2, 3, 4, 5};
       auto             gst_zipped = gst::ranges::views::zip(vec);

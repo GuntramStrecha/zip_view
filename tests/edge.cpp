@@ -56,9 +56,7 @@ SCENARIO("Testing gst::ranges::zip_view with edge scenarios", "[edge]")
     {
       auto gst_front = gst_zipped.front();
       auto std_front = std_zipped.front();
-      REQUIRE(std::get<0>(gst_front) == std::get<0>(std_front));
-      REQUIRE(std::get<1>(gst_front) == std::get<1>(std_front));
-      REQUIRE(std::equal_to{}(std::get<2>(gst_front), std::get<2>(std_front)));
+      REQUIRE((gst_front == std_front));
     }
   }
 
@@ -80,9 +78,7 @@ SCENARIO("Testing gst::ranges::zip_view with edge scenarios", "[edge]")
     THEN("The elements should match the corresponding elements of each container")
     {
       auto gst_elem = gst_zipped[1];
-      REQUIRE(std::get<0>(gst_elem) == 2);
-      REQUIRE(std::get<1>(gst_elem) == "b");
-      REQUIRE(std::equal_to{}(std::get<2>(gst_elem), 2.2));
+      REQUIRE((gst_elem == std::make_tuple(2, "b", 2.2)));
     }
   }
 
@@ -139,9 +135,8 @@ SCENARIO("Testing gst::ranges::zip_view with edge scenarios", "[edge]")
     THEN("The elements should match the corresponding elements of each container")
     {
       auto gst_elem = gst_zipped[1];
-      REQUIRE(std::get<0>(gst_elem) == Custom{2, 'b', 2.2F});
-      REQUIRE(std::get<1>(gst_elem) == Custom{4, 'd', 4.4F});
-      REQUIRE(std::get<2>(gst_elem) == Custom{6, 'f', 6.6F});
+      REQUIRE((gst_elem ==
+               std::make_tuple(Custom{2, 'b', 2.2F}, Custom{4, 'd', 4.4F}, Custom{6, 'f', 6.6F})));
     }
   }
 
@@ -198,23 +193,17 @@ SCENARIO("Testing gst::ranges::zip_view with constant containers", "[edge]")
       THEN("The front element should be the first elements of each container")
       {
         auto const gst_front = gst_zipped.front();
-        REQUIRE(std::get<0>(gst_front) == 1);
-        REQUIRE(std::get<1>(gst_front) == 'a');
-        REQUIRE(std::equal_to{}(std::get<2>(gst_front), 1.1F));
+        REQUIRE((gst_front == std::make_tuple(1, 'a', 1.1F)));
       }
       THEN("The back element should be the last elements of each container")
       {
         auto const gst_back = gst_zipped.back();
-        REQUIRE(std::get<0>(gst_back) == 3);
-        REQUIRE(std::get<1>(gst_back) == 'c');
-        REQUIRE(std::equal_to{}(std::get<2>(gst_back), 3.3F));
+        REQUIRE((gst_back == std::make_tuple(3, 'c', 3.3F)));
       }
       THEN("The subscript operator should return the correct elements")
       {
         auto const gst_elem = gst_zipped[1];
-        REQUIRE(std::get<0>(gst_elem) == 2);
-        REQUIRE(std::get<1>(gst_elem) == 'b');
-        REQUIRE(std::equal_to{}(std::get<2>(gst_elem), 2.2F));
+        REQUIRE((gst_elem == std::make_tuple(2, 'b', 2.2F)));
       }
       THEN("The zip_view should be convertible to bool")
       {
@@ -231,23 +220,17 @@ SCENARIO("Testing gst::ranges::zip_view with constant containers", "[edge]")
       THEN("The front element should be the first elements of each container")
       {
         auto const gst_front = gst_zipped.front();
-        REQUIRE(std::get<0>(gst_front) == 1);
-        REQUIRE(std::get<1>(gst_front) == 'a');
-        REQUIRE(std::equal_to{}(std::get<2>(gst_front), 1.1F));
+        REQUIRE((gst_front == std::make_tuple(1, 'a', 1.1F)));
       }
       THEN("The back element should be the last elements of each container")
       {
         auto const gst_back = gst_zipped.back();
-        REQUIRE(std::get<0>(gst_back) == 3);
-        REQUIRE(std::get<1>(gst_back) == 'c');
-        REQUIRE(std::equal_to{}(std::get<2>(gst_back), 3.3F));
+        REQUIRE((gst_back == std::make_tuple(3, 'c', 3.3F)));
       }
       THEN("The subscript operator should return the correct elements")
       {
         auto const gst_elem = gst_zipped[1];
-        REQUIRE(std::get<0>(gst_elem) == 2);
-        REQUIRE(std::get<1>(gst_elem) == 'b');
-        REQUIRE(std::equal_to{}(std::get<2>(gst_elem), 2.2F));
+        REQUIRE((gst_elem == std::make_tuple(2, 'b', 2.2F)));
       }
       THEN("The zip_view should be convertible to bool")
       {
@@ -271,23 +254,17 @@ SCENARIO("Testing gst::ranges::zip_view with constant containers", "[edge]")
       THEN("The front element should be the first elements of each container")
       {
         auto const gst_front = gst_zipped.front();
-        REQUIRE(std::get<0>(gst_front) == 1);
-        REQUIRE(std::get<1>(gst_front) == 'a');
-        REQUIRE(std::equal_to{}(std::get<2>(gst_front), 1.1F));
+        REQUIRE((gst_front == std::make_tuple(1, 'a', 1.1F)));
       }
       THEN("The back element should be the last elements of each container")
       {
         auto const gst_back = gst_zipped.back();
-        REQUIRE(std::get<0>(gst_back) == 3);
-        REQUIRE(std::get<1>(gst_back) == 'c');
-        REQUIRE(std::equal_to{}(std::get<2>(gst_back), 3.3F));
+        REQUIRE((gst_back == std::make_tuple(3, 'c', 3.3F)));
       }
       THEN("The subscript operator should return the correct elements")
       {
         auto const gst_elem = gst_zipped[1];
-        REQUIRE(std::get<0>(gst_elem) == 2);
-        REQUIRE(std::get<1>(gst_elem) == 'b');
-        REQUIRE(std::equal_to{}(std::get<2>(gst_elem), 2.2F));
+        REQUIRE((gst_elem == std::make_tuple(2, 'b', 2.2F)));
       }
       THEN("The zip_view should be convertible to bool")
       {
@@ -351,11 +328,9 @@ SCENARIO("Testing subscript operator read and write", "[edge]")
         zip[1] = std::make_tuple(20, 50.2);
         zip[2] = std::make_tuple(30, 60.3);
 
-        AND_THEN("the elements of the original containers are updated")
-        {
-          REQUIRE(v1 == std::array<int, 3>{10, 20, 30});
-          REQUIRE(v2 == std::list<double>{40.1, 50.2, 60.3});
-        }
+        REQUIRE(v1 == std::array<int, 3>{10, 20, 30});
+        REQUIRE(v2 == std::list<double>{40.1, 50.2, 60.3});
+        REQUIRE((zip[1] == std::make_tuple(20, 50.2)));
       }
     }
 
@@ -371,11 +346,9 @@ SCENARIO("Testing subscript operator read and write", "[edge]")
         zip[1] = std::make_tuple(20, 50.2);
         zip[2] = std::make_tuple(30, 60.3);
 
-        AND_THEN("the elements of the original containers are updated")
-        {
-          REQUIRE(v1 == std::array<int, 3>{10, 20, 30});
-          REQUIRE(v2 == std::list<double>{40.1, 50.2, 60.3});
-        }
+        REQUIRE(v1 == std::array<int, 3>{10, 20, 30});
+        REQUIRE(v2 == std::list<double>{40.1, 50.2, 60.3});
+        REQUIRE((zip[2] == std::make_tuple(30, 60.3)));
       }
     }
   }
@@ -398,9 +371,7 @@ SCENARIO("Testing gst::ranges::zip_view with modified containers", "[edge]")
       deq.push_back(4.4F);
 
       REQUIRE(gst_zipped.size() == 4);
-      REQUIRE(std::get<0>(gst_zipped[3]) == 4);
-      REQUIRE(std::get<1>(gst_zipped[3]) == 'd');
-      REQUIRE(std::equal_to{}(std::get<2>(gst_zipped[3]), 4.4F));
+      REQUIRE((gst_zipped[3] == std::make_tuple(4, 'd', 4.4F)));
     }
   }
 }
@@ -428,25 +399,19 @@ SCENARIO("Testing const and non-const access to zip_view", "[const_correctness]"
       THEN("non-const front() works")
       {
         auto front_elem = zipped.front();
-        REQUIRE(std::get<0>(front_elem) == 1);
-        REQUIRE(std::get<1>(front_elem) == 'a');
-        REQUIRE(std::equal_to{}(std::get<2>(front_elem), 1.1F));
+        REQUIRE((front_elem == std::make_tuple(1, 'a', 1.1F)));
       }
 
       THEN("non-const back() works")
       {
         auto back_elem = zipped.back();
-        REQUIRE(std::get<0>(back_elem) == 5);
-        REQUIRE(std::get<1>(back_elem) == 'e');
-        REQUIRE(std::equal_to{}(std::get<2>(back_elem), 5.5F));
+        REQUIRE((back_elem == std::make_tuple(5, 'e', 5.5F)));
       }
 
       THEN("non-const operator[] works")
       {
         auto elem = zipped[2];
-        REQUIRE(std::get<0>(elem) == 3);
-        REQUIRE(std::get<1>(elem) == 'c');
-        REQUIRE(std::equal_to{}(std::get<2>(elem), 3.3F));
+        REQUIRE((elem == std::make_tuple(3, 'c', 3.3F)));
       }
     }
 
@@ -473,25 +438,19 @@ SCENARIO("Testing const and non-const access to zip_view", "[const_correctness]"
       THEN("const front() works")
       {
         auto front_elem = zipped.front();
-        REQUIRE(std::get<0>(front_elem) == 1);
-        REQUIRE(std::get<1>(front_elem) == 'a');
-        REQUIRE(std::equal_to{}(std::get<2>(front_elem), 1.1F));
+        REQUIRE((front_elem == std::make_tuple(1, 'a', 1.1F)));
       }
 
       THEN("const back() works")
       {
         auto back_elem = zipped.back();
-        REQUIRE(std::get<0>(back_elem) == 5);
-        REQUIRE(std::get<1>(back_elem) == 'e');
-        REQUIRE(std::equal_to{}(std::get<2>(back_elem), 5.5F));
+        REQUIRE((back_elem == std::make_tuple(5, 'e', 5.5F)));
       }
 
       THEN("const operator[] works")
       {
         auto elem = zipped[2];
-        REQUIRE(std::get<0>(elem) == 3);
-        REQUIRE(std::get<1>(elem) == 'c');
-        REQUIRE(std::equal_to{}(std::get<2>(elem), 3.3F));
+        REQUIRE((elem == std::make_tuple(3, 'c', 3.3F)));
       }
 
       THEN("const operator bool() works correctly") { REQUIRE(static_cast<bool>(zipped) == true); }
