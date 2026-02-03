@@ -73,7 +73,7 @@ if(CODE_COVERAGE)
       if(LLVM_COV_EXE)
         add_custom_target(
           coverage
-          COMMAND ${GCOVR_EXE} -r ${CMAKE_SOURCE_DIR} --gcov-executable "${LLVM_COV_EXE} gcov" --filter ${CMAKE_SOURCE_DIR}/include/ --html --html-details -o coverage.html
+          COMMAND ${GCOVR_EXE} -r ${CMAKE_SOURCE_DIR} --gcov-executable "${LLVM_COV_EXE} gcov" --filter ${CMAKE_SOURCE_DIR}/include/ --exclude-throw-branches --html --html-details -o coverage.html
           WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
           COMMENT "Generating code coverage report with gcovr and llvm-cov for include folder only"
         )
@@ -83,7 +83,7 @@ if(CODE_COVERAGE)
     else()
       add_custom_target(
         coverage
-        COMMAND ${GCOVR_EXE} -r ${CMAKE_SOURCE_DIR} --filter ${CMAKE_SOURCE_DIR}/include/ --html --html-details -o coverage.html
+        COMMAND ${GCOVR_EXE} -r ${CMAKE_SOURCE_DIR} --filter ${CMAKE_SOURCE_DIR}/include/ --exclude-throw-branches --html --html-details -o coverage.html
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         COMMENT "Generating code coverage report with gcovr for include folder only"
       )
