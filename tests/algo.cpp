@@ -310,11 +310,11 @@ SCENARIO("std::mismatch works with zip_view", "[algorithms][mismatch]")
 {
   GIVEN("Two pairs of vectors with a difference")
   {
-    std::vector<int>    v1a{1, 2, 3, 4, 5};
-    std::vector<double> v2a{1.1, 2.2, 3.3, 4.4, 5.5};
+    std::vector<int>  v1a{1, 2, 3, 4, 5};
+    std::vector<char> v2a{'a', 'b', 'c', 'd', 'e'};
 
-    std::vector<int>    v1b{1, 2, 9, 4, 5};
-    std::vector<double> v2b{1.1, 2.2, 9.9, 4.4, 5.5};
+    std::vector<int>  v1b{1, 2, 9, 4, 5};
+    std::vector<char> v2b{'a', 'b', 'c', 'd', 'e'};
 
     WHEN("we find the first mismatch")
     {
@@ -323,8 +323,10 @@ SCENARIO("std::mismatch works with zip_view", "[algorithms][mismatch]")
       auto result = std::mismatch(zip_a.begin(),
                                   zip_a.end(),
                                   zip_b.begin(),
-                                  [](auto const& a, auto const& b)
-                                  { return std::get<0>(a) == std::get<0>(b); });
+                                  [](auto const& a, auto const& b) {
+                                    return (std::get<0>(a) == std::get<0>(b)) &&
+                                           (std::get<1>(a) == std::get<1>(b));
+                                  });
 
       THEN("we find the mismatch at position 2")
       {

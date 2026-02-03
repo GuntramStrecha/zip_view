@@ -249,4 +249,235 @@ SCENARIO("Testing gst::ranges::zip_view member functions", "zip_view")
       REQUIRE(static_cast<bool>(gst_zipped) == static_cast<bool>(std_zipped));
     }
   }
+
+  GIVEN("Single container (N=1 case)")
+  {
+    THEN("The zip_view shall have correct size")
+    {
+      std::vector<int> vec        = {1, 2, 3, 4, 5};
+      auto             gst_zipped = gst::ranges::views::zip(vec);
+      REQUIRE(gst_zipped.size() == 5);
+    }
+
+    THEN("Elements are tuples with single element")
+    {
+      std::vector<int> vec        = {1, 2, 3, 4, 5};
+      auto             gst_zipped = gst::ranges::views::zip(vec);
+      auto             std_zipped = std::ranges::views::zip(vec);
+      auto             elem       = gst_zipped[2];
+      REQUIRE(std::get<0>(elem) == 3);
+      REQUIRE(std::get<0>(elem) == std::get<0>(std_zipped[2]));
+    }
+
+    THEN("front() and back() work correctly")
+    {
+      std::vector<int> vec        = {1, 2, 3, 4, 5};
+      auto             gst_zipped = gst::ranges::views::zip(vec);
+      REQUIRE(std::get<0>(gst_zipped.front()) == 1);
+      REQUIRE(std::get<0>(gst_zipped.back()) == 5);
+    }
+
+    THEN("Can iterate and modify through single container zip")
+    {
+      std::vector<int> vec        = {1, 2, 3, 4, 5};
+      auto             gst_zipped = gst::ranges::views::zip(vec);
+      for (auto&& elem : gst_zipped) { std::get<0>(elem) *= 2; }
+      REQUIRE(vec == std::vector<int>{2, 4, 6, 8, 10});
+      REQUIRE(std::get<0>(gst_zipped.front()) == 2);
+      REQUIRE(std::get<0>(gst_zipped.back()) == 10);
+    }
+  }
+}
+
+SCENARIO("Testing zip_view with many containers (stress test)", "[zip_view]")
+{
+  GIVEN("10 containers of different types")
+  {
+    std::vector<int>   v1  = {1, 2, 3};
+    std::vector<int>   v2  = {4, 5, 6};
+    std::vector<int>   v3  = {7, 8, 9};
+    std::vector<int>   v4  = {10, 11, 12};
+    std::vector<int>   v5  = {13, 14, 15};
+    std::list<int>     v6  = {16, 17, 18};
+    std::list<int>     v7  = {19, 20, 21};
+    std::deque<int>    v8  = {22, 23, 24};
+    std::deque<int>    v9  = {25, 26, 27};
+    std::array<int, 3> v10 = {28, 29, 30};
+
+    WHEN("Creating zip_view with 10 containers")
+    {
+      auto gst_zipped = gst::ranges::views::zip(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10);
+      auto std_zipped = std::ranges::views::zip(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10);
+
+      THEN("The zip_view has correct size") { REQUIRE(gst_zipped.size() == 3); }
+
+      THEN("All elements are accessible")
+      {
+        auto elem = gst_zipped[1];
+        REQUIRE(std::get<0>(elem) == 2);
+        REQUIRE(std::get<5>(elem) == 17);
+        REQUIRE(std::get<9>(elem) == 29);
+      }
+
+      THEN("Matches std::ranges::zip_view behavior")
+      {
+        auto gst_it = gst_zipped.begin();
+        auto std_it = std_zipped.begin();
+        while (gst_it != gst_zipped.end())
+        {
+          REQUIRE((*gst_it == *std_it));
+          ++gst_it;
+          ++std_it;
+        }
+      }
+
+      THEN("Can modify all containers through zip_view")
+      {
+        for (auto&& elem : gst_zipped)
+        {
+          std::get<0>(elem) += 100;
+          std::get<9>(elem) += 1000;
+        }
+        REQUIRE(v1[0] == 101);
+        REQUIRE(v10[0] == 1028);
+      }
+    }
+  }
+
+  GIVEN("15 containers with varying sizes")
+  {
+    std::vector<int> v1  = {1};
+    std::vector<int> v2  = {2, 3};
+    std::vector<int> v3  = {4, 5, 6};
+    std::vector<int> v4  = {7, 8, 9, 10};
+    std::vector<int> v5  = {11, 12, 13, 14, 15};
+    std::vector<int> v6  = {16};
+    std::vector<int> v7  = {17};
+    std::vector<int> v8  = {18};
+    std::vector<int> v9  = {19};
+    std::vector<int> v10 = {20};
+    std::vector<int> v11 = {21};
+    std::vector<int> v12 = {22};
+    std::vector<int> v13 = {23};
+    std::vector<int> v14 = {24};
+    std::vector<int> v15 = {25};
+
+    WHEN("Creating zip_view with 15 containers")
+    {
+      auto zipped =
+        gst::ranges::views::zip(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15);
+
+      THEN("Size is limited by shortest container") { REQUIRE(zipped.size() == 1); }
+
+      THEN("All 15 elements in tuple are accessible")
+      {
+        auto elem = zipped.front();
+        REQUIRE(std::get<0>(elem) == 1);
+        REQUIRE(std::get<7>(elem) == 18);
+        REQUIRE(std::get<14>(elem) == 25);
+      }
+    }
+  }
+}
+
+SCENARIO("Testing assignment operators", "[zip_view]")
+{
+  GIVEN("Two zip_views over different vectors")
+  {
+    WHEN("Copy assignment from different zip_view is performed")
+    {
+      std::vector<int> v1 = {1, 2, 3};
+      std::vector<int> v2 = {4, 5, 6};
+      std::vector<int> v3 = {7, 8, 9, 10};
+      std::vector<int> v4 = {11, 12, 13, 14};
+
+      auto zipped1 = gst::ranges::views::zip(v1, v2);
+      auto zipped2 = gst::ranges::views::zip(v3, v4);
+
+      zipped1 = zipped2;
+
+      THEN("Views are rebound (std::ranges::zip_view semantics)")
+      {
+        // Assignment rebinds the views, not copying container contents
+        // zipped1 now refers to v3 and v4
+        REQUIRE(zipped1.size() == 4);
+        REQUIRE(std::get<0>(zipped1.front()) == 7);
+        REQUIRE(std::get<1>(zipped1.front()) == 11);
+        REQUIRE(std::get<0>(zipped1.back()) == 10);
+        REQUIRE(std::get<1>(zipped1.back()) == 14);
+
+        // Original containers v1 and v2 are unchanged
+        REQUIRE(v1 == std::vector<int>{1, 2, 3});
+        REQUIRE(v2 == std::vector<int>{4, 5, 6});
+
+        // Modifying through zipped1 now affects v3 and v4
+        std::get<0>(zipped1[0]) = 99;
+        std::get<1>(zipped1[1]) = 88;
+        REQUIRE(v3[0] == 99);
+        REQUIRE(v4[1] == 88);
+        REQUIRE(v1[0] == 1);
+        REQUIRE(v2[1] == 5);
+      }
+    }
+
+    WHEN("Move assignment from different zip_view is performed")
+    {
+      std::vector<int> v1 = {1, 2, 3};
+      std::vector<int> v2 = {4, 5, 6};
+      std::vector<int> v3 = {7, 8, 9, 10};
+      std::vector<int> v4 = {11, 12, 13, 14};
+
+      auto zipped1 = gst::ranges::views::zip(v1, v2);
+      auto zipped2 = gst::ranges::views::zip(v3, v4);
+
+      zipped1 = std::move(zipped2);
+
+      THEN("Views are rebound via move")
+      {
+        // Move assignment also rebinds the views
+        REQUIRE(zipped1.size() == 4);
+        REQUIRE(std::get<0>(zipped1[2]) == 9);
+        REQUIRE(std::get<1>(zipped1[3]) == 14);
+
+        // Original containers v1 and v2 are unchanged
+        REQUIRE(v1 == std::vector<int>{1, 2, 3});
+        REQUIRE(v2 == std::vector<int>{4, 5, 6});
+      }
+    }
+
+    WHEN("Copy self-assignment is performed")
+    {
+      std::vector<int> v1 = {1, 2, 3};
+      std::vector<int> v2 = {4, 5, 6};
+
+      auto zipped1 = gst::ranges::views::zip(v1, v2);
+
+      auto& ref = zipped1;
+      zipped1   = ref;
+
+      THEN("The zip_view remains valid and functional")
+      {
+        REQUIRE(zipped1.size() == 3);
+        REQUIRE(std::get<0>(zipped1.front()) == 1);
+        REQUIRE(std::get<1>(zipped1.back()) == 6);
+      }
+    }
+
+    WHEN("Move self-assignment is performed")
+    {
+      std::vector<int> v1 = {1, 2, 3};
+      std::vector<int> v2 = {4, 5, 6};
+
+      auto zipped1 = gst::ranges::views::zip(v1, v2);
+
+      auto& ref = zipped1;
+      zipped1   = std::move(ref);
+
+      THEN("The zip_view remains in a valid state")
+      {
+        REQUIRE(zipped1.size() == 3);
+        REQUIRE(std::get<0>(zipped1[1]) == 2);
+      }
+    }
+  }
 }

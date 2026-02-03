@@ -145,6 +145,19 @@ SCENARIO("zip_view random access iterator operations", "[random_access]")
     auto it     = zipped.begin();
     auto end    = zipped.end();
 
+    THEN("we can use operator++")
+    {
+      ++it;
+      REQUIRE(std::get<0>(*it) == 2);
+    }
+
+    THEN("we can use operator++(int) post-increment")
+    {
+      auto it_prev = it++;
+      REQUIRE(std::get<0>(*it_prev) == 1);
+      REQUIRE(std::get<0>(*it) == 2);
+    }
+
     THEN("we can use operator+")
     {
       auto it2 = it + 2;
@@ -206,6 +219,24 @@ SCENARIO("zip_view random access iterator operations", "[random_access]")
   }
 }
 
+SCENARIO("zip_view iterator default constructor", "[iterator]")
+{
+  GIVEN("A zip_view over two vectors")
+  {
+    std::vector<int>    vec1 = {1, 2, 3};
+    std::vector<double> vec2 = {10.0, 20.0, 30.0};
+
+    auto zipped = gst::ranges::views::zip(vec1, vec2);
+
+    THEN("we can default construct an iterator")
+    {
+      typename decltype(zipped)::iterator it1;
+      typename decltype(zipped)::iterator it2;
+      REQUIRE(it1 == it2);
+    }
+  }
+}
+
 SCENARIO("zip_view bidirectional iterator operations", "[bidirectional]")
 {
   GIVEN("Two lists")
@@ -244,6 +275,280 @@ SCENARIO("zip_view bidirectional iterator operations", "[bidirectional]")
       auto it_prev = it--;
       REQUIRE(std::get<0>(*it_prev) == 3);
       REQUIRE(std::get<0>(*it) == 2);
+    }
+  }
+}
+
+SCENARIO("Testing std::advance and std::distance with zip_view iterators", "[iterator]")
+{
+  GIVEN("A zip_view over random-access containers")
+  {
+    std::vector<int>    vec1 = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    std::vector<double> vec2 = {1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8, 9.9, 10.1};
+
+    auto zipped = gst::ranges::views::zip(vec1, vec2);
+
+    WHEN("Using std::advance with positive offset")
+    {
+      auto it = zipped.begin();
+      std::advance(it, 5);
+
+      THEN("Iterator is advanced correctly")
+      {
+        REQUIRE(std::get<0>(*it) == 6);
+        REQUIRE(std::get<1>(*it) == Catch::Approx(6.6));
+      }
+    }
+
+    WHEN("Using std::advance with negative offset")
+    {
+      auto it = zipped.end();
+      std::advance(it, -3);
+
+      THEN("Iterator is moved backward correctly")
+      {
+        REQUIRE(std::get<0>(*it) == 8);
+        REQUIRE(std::get<1>(*it) == Catch::Approx(8.8));
+      }
+    }
+
+    WHEN("Using std::advance with zero offset")
+    {
+      auto it  = zipped.begin() + 4;
+      auto pos = std::get<0>(*it);
+      std::advance(it, 0);
+
+      THEN("Iterator position remains unchanged") { REQUIRE(std::get<0>(*it) == pos); }
+    }
+
+    WHEN("Using std::distance between iterators")
+    {
+      auto it1  = zipped.begin() + 2;
+      auto it2  = zipped.begin() + 7;
+      auto dist = std::distance(it1, it2);
+
+      THEN("Distance is calculated correctly") { REQUIRE(dist == 5); }
+    }
+
+    WHEN("Using std::distance from begin to end")
+    {
+      auto dist = std::distance(zipped.begin(), zipped.end());
+
+      THEN("Distance equals size") { REQUIRE(dist == static_cast<std::ptrdiff_t>(zipped.size())); }
+    }
+  }
+
+  GIVEN("A zip_view over bidirectional containers")
+  {
+    std::list<int>    lst1 = {10, 20, 30, 40, 50};
+    std::list<double> lst2 = {1.1, 2.2, 3.3, 4.4, 5.5};
+
+    auto zipped = gst::ranges::views::zip(lst1, lst2);
+
+    WHEN("Using std::advance forward on bidirectional iterator")
+    {
+      auto it = zipped.begin();
+      std::advance(it, 3);
+
+      THEN("Iterator advances correctly") { REQUIRE(std::get<0>(*it) == 40); }
+    }
+
+    WHEN("Using std::advance backward on bidirectional iterator")
+    {
+      auto it = zipped.end();
+      std::advance(it, -2);
+
+      THEN("Iterator moves backward correctly") { REQUIRE(std::get<0>(*it) == 40); }
+    }
+
+    WHEN("Using std::distance on bidirectional iterator")
+    {
+      auto dist = std::distance(zipped.begin(), zipped.end());
+
+      THEN("Distance is computed (O(n) for bidirectional)") { REQUIRE(dist == 5); }
+    }
+  }
+
+  GIVEN("A zip_view over forward containers")
+  {
+    std::forward_list<int> flst1 = {100, 200, 300};
+    std::forward_list<int> flst2 = {10, 20, 30};
+
+    auto zipped = gst::ranges::views::zip(flst1, flst2);
+
+    WHEN("Using std::advance forward on forward iterator")
+    {
+      auto it = zipped.begin();
+      std::advance(it, 2);
+
+      THEN("Iterator advances correctly")
+      {
+        REQUIRE(std::get<0>(*it) == 300);
+        REQUIRE(std::get<1>(*it) == 30);
+      }
+    }
+
+    WHEN("Using std::distance on forward iterator")
+    {
+      auto dist = std::distance(zipped.begin(), zipped.end());
+
+      THEN("Distance is computed (O(n) for forward)") { REQUIRE(dist == 3); }
+    }
+  }
+}
+
+SCENARIO("Testing iterator copy and move semantics", "[iterator]")
+{
+  GIVEN("A zip_view over two vectors")
+  {
+    std::vector<int>  vec1 = {1, 2, 3, 4, 5};
+    std::vector<char> vec2 = {'a', 'b', 'c', 'd', 'e'};
+
+    auto zipped = gst::ranges::views::zip(vec1, vec2);
+
+    WHEN("Copy constructing an iterator")
+    {
+      auto it1 = zipped.begin() + 2;
+      auto it2 = it1; // Copy
+
+      THEN("Both iterators point to the same element")
+      {
+        REQUIRE(std::get<0>(*it1) == std::get<0>(*it2));
+        REQUIRE(std::get<1>(*it1) == std::get<1>(*it2));
+        REQUIRE(it1 == it2);
+      }
+
+      THEN("Modifying one doesn't affect the other's position")
+      {
+        ++it1;
+        REQUIRE(it1 != it2);
+        REQUIRE(std::get<0>(*it1) == 4);
+        REQUIRE(std::get<0>(*it2) == 3);
+      }
+    }
+
+    WHEN("Copy assigning an iterator")
+    {
+      auto it1 = zipped.begin() + 1;
+      auto it2 = zipped.begin() + 3;
+      it2      = it1; // Copy assign
+
+      THEN("Both iterators point to the same element")
+      {
+        REQUIRE(it1 == it2);
+        REQUIRE(std::get<0>(*it2) == 2);
+      }
+    }
+
+    WHEN("Move constructing an iterator")
+    {
+      auto it1 = zipped.begin() + 2;
+      auto val = std::get<0>(*it1);
+      auto it2 = std::move(it1); // Move
+
+      THEN("Moved-to iterator has correct value") { REQUIRE(std::get<0>(*it2) == val); }
+    }
+
+    WHEN("Move assigning an iterator")
+    {
+      auto it1 = zipped.begin() + 4;
+      auto it2 = zipped.begin();
+      it2      = std::move(it1); // Move assign
+
+      THEN("Moved-to iterator points to original position")
+      {
+        REQUIRE(std::get<0>(*it2) == 5);
+        REQUIRE(std::get<1>(*it2) == 'e');
+      }
+    }
+  }
+}
+
+SCENARIO("Testing default constructed iterators", "[iterator]")
+{
+  GIVEN("Default constructed iterators")
+  {
+    using zip_t = decltype(gst::ranges::views::zip(std::vector<int>{}, std::vector<char>{}));
+
+    WHEN("Two iterators are default constructed")
+    {
+      typename zip_t::iterator it1;
+      typename zip_t::iterator it2;
+
+      THEN("They compare equal") { REQUIRE(it1 == it2); }
+
+      THEN("They are not not-equal") { REQUIRE_FALSE(it1 != it2); }
+    }
+
+    WHEN("Default constructed const_iterator")
+    {
+      typename zip_t::const_iterator cit1;
+      typename zip_t::const_iterator cit2;
+
+      THEN("They compare equal") { REQUIRE(cit1 == cit2); }
+    }
+  }
+}
+
+SCENARIO("Testing iterator edge cases with arithmetic", "[iterator]")
+{
+  GIVEN("A zip_view over random-access containers")
+  {
+    std::vector<int> vec1 = {10, 20, 30, 40, 50};
+    std::vector<int> vec2 = {1, 2, 3, 4, 5};
+
+    auto zipped = gst::ranges::views::zip(vec1, vec2);
+
+    WHEN("Adding zero to an iterator")
+    {
+      auto it1 = zipped.begin() + 2;
+      auto it2 = it1 + 0;
+
+      THEN("Iterator position is unchanged")
+      {
+        REQUIRE(it1 == it2);
+        REQUIRE(std::get<0>(*it2) == 30);
+      }
+    }
+
+    WHEN("Subtracting zero from an iterator")
+    {
+      auto it1 = zipped.begin() + 3;
+      auto it2 = it1 - 0;
+
+      THEN("Iterator position is unchanged")
+      {
+        REQUIRE(it1 == it2);
+        REQUIRE(std::get<0>(*it2) == 40);
+      }
+    }
+
+    WHEN("Computing distance from iterator to itself")
+    {
+      auto it   = zipped.begin() + 2;
+      auto dist = it - it;
+
+      THEN("Distance is zero") { REQUIRE(dist == 0); }
+    }
+
+    WHEN("Adding and subtracting same value")
+    {
+      auto it1 = zipped.begin() + 1;
+      auto it2 = (it1 + 3) - 3;
+
+      THEN("Iterator returns to original position") { REQUIRE(it1 == it2); }
+    }
+
+    WHEN("Using negative subscript offset from end")
+    {
+      auto it  = zipped.end();
+      it      -= 1;
+
+      THEN("Can access last element")
+      {
+        REQUIRE(std::get<0>(*it) == 50);
+        REQUIRE(std::get<1>(*it) == 5);
+      }
     }
   }
 }
