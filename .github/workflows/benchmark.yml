@@ -146,22 +146,6 @@ jobs:
           merged/benchmark_results_merged.txt
           merged/benchmark_summary.md
 
-    - name: Comment PR with Benchmark Results
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v7
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const fs = require('fs');
-          const summary = fs.readFileSync('merged/benchmark_summary.md', 'utf8');
-
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: summary
-          });
-
     - name: Add to Job Summary
       if: always()
       run: |
