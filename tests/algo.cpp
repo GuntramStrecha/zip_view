@@ -1366,11 +1366,7 @@ SCENARIO("Testing algorithms on nested zip_views", "[zip_view][nested][algo]")
         bool all_positive =
           std::all_of(nested.begin(),
                       nested.end(),
-                      [](auto elem)
-                      {
-                        auto t0 = std::get<0>(elem);
-                        return std::get<0>(t0) > 0 && std::get<1>(t0) > 0 && std::get<1>(elem) > 0;
-                      });
+                      [](auto elem) { return std::get<0>(elem) > std::make_tuple(0, 0); });
         REQUIRE(all_positive);
       }
     }

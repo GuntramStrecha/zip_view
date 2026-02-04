@@ -237,13 +237,13 @@ TEST_CASE("Benchmark Nested ZipView Deep Nesting", "[nested]")
   std::iota(v7.begin(), v7.end(), 300000);
   std::iota(v8.begin(), v8.end(), 350000);
 
-  auto zip1_1     = gst::ranges::views::zip(v1, v2);
-  auto zip1_2     = gst::ranges::views::zip(v3, v4);
-  auto zip2_1     = gst::ranges::views::zip(v5, v6);
-  auto zip2_2     = gst::ranges::views::zip(v7, v8);
-  auto nested_1   = gst::ranges::views::zip(zip1_1, zip1_2);
-  auto nested_2   = gst::ranges::views::zip(zip2_1, zip2_2);
-  auto deep_neste = gst::ranges::views::zip(nested_1, nested_2);
+  auto zip1_1      = gst::ranges::views::zip(v1, v2);
+  auto zip1_2      = gst::ranges::views::zip(v3, v4);
+  auto zip2_1      = gst::ranges::views::zip(v5, v6);
+  auto zip2_2      = gst::ranges::views::zip(v7, v8);
+  auto nested_1    = gst::ranges::views::zip(zip1_1, zip1_2);
+  auto nested_2    = gst::ranges::views::zip(zip2_1, zip2_2);
+  auto deep_nested = gst::ranges::views::zip(nested_1, nested_2);
 
   BENCHMARK("flat zip iterate (8 ranges)")
   {
@@ -276,7 +276,7 @@ TEST_CASE("Benchmark Nested ZipView Deep Nesting", "[nested]")
   BENCHMARK("deep nested zip iterate (2x(2x2) ranges)")
   {
     int sum = 0;
-    for (auto t : deep_neste)
+    for (auto t : deep_nested)
     {
       auto n0   = std::get<0>(t);
       auto n1   = std::get<1>(t);

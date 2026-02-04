@@ -22,11 +22,14 @@ SCENARIO("zip_view with empty temporaries", "[temporaries]")
 {
   GIVEN("zip_view from empty temporaries")
   {
-    auto const gst_zip = gst::ranges::views::zip(std::array<int, 0>{}, std::list<char>{});
-    auto const std_zip = std::ranges::views::zip(std::array<int, 0>{}, std::list<char>{});
+    auto gst_zip =
+      gst::ranges::views::zip(std::array<int, 0>{}, std::list<char>{}, std::vector<float>{});
+    auto std_zip =
+      std::ranges::views::zip(std::array<int, 0>{}, std::list<char>{}, std::vector<float>{});
 
     THEN("zip_view is empty") { REQUIRE(gst_zip.empty() == std_zip.empty()); }
     THEN("size is zero") { REQUIRE(gst_zip.size() == std_zip.size()); }
+    THEN("zip_views are equal") { REQUIRE(std::ranges::equal(gst_zip, std_zip)); }
   }
 }
 
@@ -34,22 +37,16 @@ SCENARIO("zip_view with non-empty temporaries", "[temporaries]")
 {
   GIVEN("zip_view from temporaries")
   {
-    auto const gst_zip = gst::ranges::views::zip(std::array<int, 3>{1, 2, 3},
-                                                 std::list<char>{'a', 'b', 'c'},
-                                                 std::vector<float>{1.1F, 2.2F, 3.3F});
-    auto const std_zip = std::ranges::views::zip(std::array<int, 3>{1, 2, 3},
-                                                 std::list<char>{'a', 'b', 'c'},
-                                                 std::vector<float>{1.1F, 2.2F, 3.3F});
+    auto gst_zip = gst::ranges::views::zip(std::array<int, 3>{1, 2, 3},
+                                           std::list<char>{'a', 'b', 'c'},
+                                           std::vector<float>{1.1F, 2.2F, 3.3F});
+    auto std_zip = std::ranges::views::zip(std::array<int, 3>{1, 2, 3},
+                                           std::list<char>{'a', 'b', 'c'},
+                                           std::vector<float>{1.1F, 2.2F, 3.3F});
 
     THEN("emptiness matches std::ranges::zip_view") { REQUIRE(gst_zip.empty() == std_zip.empty()); }
     THEN("size matches std::ranges::zip_view") { REQUIRE(gst_zip.size() == std_zip.size()); }
-    THEN("elements match std::ranges::zip_view")
-    {
-      auto gst_it = gst_zip.begin();
-      auto std_it = std_zip.begin();
-      for (; gst_it != gst_zip.end(); ++gst_it, ++std_it) { REQUIRE((*gst_it == *std_it)); }
-      REQUIRE(std_it == std_zip.end());
-    }
+    THEN("elements match std::ranges::zip_view") { REQUIRE(std::ranges::equal(gst_zip, std_zip)); }
   }
 }
 
@@ -57,8 +54,12 @@ SCENARIO("zip_view owns temporaries data", "[temporaries]")
 {
   GIVEN("zip_view from rvalue containers")
   {
-    auto gst_zip =
-      gst::ranges::views::zip(std::vector<int>{1, 2, 3}, std::vector<char>{'a', 'b', 'c'});
+    auto gst_zip = gst::ranges::views::zip(std::vector<int>{1, 2, 3},
+                                           std::vector<char>{'a', 'b', 'c'},
+                                           std::vector<float>{1.1F, 2.2F, 3.3F});
+    auto std_zip = std::ranges::views::zip(std::vector<int>{11, 12, 13},
+                                           std::vector<char>{'A', 'B', 'C'},
+                                           std::vector<float>{11.1F, 12.2F, 13.3F});
 
     WHEN("mutating values through the view")
     {
@@ -66,14 +67,10 @@ SCENARIO("zip_view owns temporaries data", "[temporaries]")
       {
         std::get<0>(t) += 10;
         std::get<1>(t)  = static_cast<char>(std::get<1>(t) - 'a' + 'A');
+        std::get<2>(t) += 10.0F;
       }
 
-      THEN("mutations are observable")
-      {
-        REQUIRE((gst_zip[0] == std::make_tuple(11, 'A')));
-        REQUIRE((gst_zip[1] == std::make_tuple(12, 'B')));
-        REQUIRE((gst_zip[2] == std::make_tuple(13, 'C')));
-      }
+      THEN("mutations are observable") { REQUIRE(std::ranges::equal(gst_zip, std_zip)); }
     }
   }
 }
@@ -113,13 +110,7 @@ SCENARIO("const zip_view from temporaries matches std", "[temporaries]")
                                                  std::vector<char>{'a', 'b', 'c'},
                                                  std::list<double>{1.1, 2.2, 3.3});
 
-    THEN("elements match std::ranges::zip_view")
-    {
-      auto gst_it = gst_zip.begin();
-      auto std_it = std_zip.begin();
-      for (; gst_it != gst_zip.end(); ++gst_it, ++std_it) { REQUIRE((*gst_it == *std_it)); }
-      REQUIRE(std_it == std_zip.end());
-    }
+    THEN("elements match std::ranges::zip_view") { REQUIRE(std::ranges::equal(gst_zip, std_zip)); }
   }
 }
 
@@ -397,21 +388,7 @@ SCENARIO("Testing nested zip_views with temporaries", "[zip_view][nested][temp]"
       {
         REQUIRE(gst_nested.size() == std_nested.size());
         REQUIRE(gst_nested.empty() == std_nested.empty());
-
-        auto gst_it = gst_nested.begin();
-        auto std_it = std_nested.begin();
-
-        int count = 0;
-        while (gst_it != gst_nested.end() && std_it != std_nested.end())
-        {
-          auto gst_elem = *gst_it;
-          auto std_elem = *std_it;
-          REQUIRE((gst_elem == std_elem));
-          ++gst_it;
-          ++std_it;
-          ++count;
-        }
-        REQUIRE(count == 3);
+        REQUIRE(std::ranges::equal(gst_nested, std_nested));
       }
     }
 

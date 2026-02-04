@@ -434,14 +434,12 @@ public:
       return !(*this < other);
     }
 
-    // Friend function for n + iterator
     template <bool B = is_random_access, typename std::enable_if<B, int>::type = 0>
     friend auto operator+(difference_type const n, basic_iterator const& it) -> basic_iterator
     {
       return it + n;
     }
 
-    // Custom iter_swap for proper swapping of zipped elements
     friend auto iter_swap(basic_iterator const& lhs, basic_iterator const& rhs) -> void
     {
       iter_swap_impl(lhs, rhs, INDICES);
