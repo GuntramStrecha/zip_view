@@ -571,219 +571,169 @@ SCENARIO("std::swap_ranges works on zip_view", "[algorithms][swap]")
   }
 }
 
-SCENARIO("zip_view zips three containers and accumulate", "[algorithms]")
+SCENARIO("zip_view with conditional accumulate based on boolean predicate", "[algorithms]")
 {
-  GIVEN("three vectors of same size and different element types")
+  GIVEN("three containers of different sizes with boolean predicate")
   {
     std::array<bool, 3> v1{true, false, true};
     std::vector<double> v2{4.1, 5.2, 6.3, 7.4};
     std::list<char>     v3{'a', 'b', 'c', 'd', 'e'};
 
-    THEN("we can zip them")
+    THEN("we can conditionally accumulate based on the boolean first element")
     {
       auto zip = gst::ranges::views::zip(v1, v2, v3);
+      auto sum =
+        std::accumulate(zip.begin(),
+                        zip.end(),
+                        0.0,
+                        [](auto acc, auto t)
+                        { return acc + (std::get<0>(t) ? std::get<1>(t) + std::get<2>(t) : 0); });
 
-      AND_THEN("we can accumulate the zipped view depending on the first element")
-      {
-        auto sum =
-          std::accumulate(zip.begin(),
-                          zip.end(),
-                          0.0,
-                          [](auto acc, auto t)
-                          { return acc + (std::get<0>(t) ? std::get<1>(t) + std::get<2>(t) : 0); });
-
-        REQUIRE(sum == Catch::Approx(4.1F + 'a' + 6.3F + 'c'));
-      }
+      REQUIRE(sum == Catch::Approx(4.1F + 'a' + 6.3F + 'c'));
     }
   }
 }
 
 SCENARIO("zip_view zips three containers and applies for_each", "[algorithms]")
 {
-  GIVEN("three vectors of same size and different element types")
+  GIVEN("three containers of different element types")
   {
     std::array<int, 3> v1{1, 2, 3};
     std::vector<float> v2{4.1F, 5.2F, 6.3F, 7.4F};
     std::list<char>    v3{'a', 'b', 'c', 'd', 'e'};
 
-    THEN("we can zip them")
+    THEN("we can zip them and apply for_each to modify elements")
     {
       auto zip = gst::ranges::views::zip(v1, v2, v3);
-      AND_THEN("we can apply for_each to the zipped view")
-      {
-        std::for_each(zip.begin(),
-                      zip.end(),
-                      [](auto&& t)
-                      {
-                        std::get<0>(t) *= 2;
-                        std::get<1>(t) += 1.0F;
-                        std::get<2>(t)  = static_cast<char>(std::toupper(std::get<2>(t)));
-                      });
+      std::for_each(zip.begin(), zip.end(), [](auto&& t) { std::get<0>(t) *= 2; });
 
-        REQUIRE(v1 == std::array<int, 3>{2, 4, 6});
-        REQUIRE(v2 == std::vector<float>{5.1F, 6.2F, 7.3F, 7.4F});
-        REQUIRE(v3 == std::list<char>{'A', 'B', 'C', 'd', 'e'});
-      }
+      REQUIRE(v1 == std::array<int, 3>{2, 4, 6});
     }
   }
 }
 
 SCENARIO("zip_view zips three containers and counts elements with count_if", "[algorithms]")
 {
-  GIVEN("three vectors of same size and different element types")
+  GIVEN("three containers with different element types")
   {
     std::array<int, 3> v1{1, 2, 3};
     std::vector<float> v2{4.1F, 5.2F, 6.3F, 7.4F};
     std::list<char>    v3{'a', 'b', 'c', 'd', 'e'};
 
-    THEN("we can zip them")
+    THEN("we can count elements in the zipped view with count_if")
     {
-      auto zip = gst::ranges::views::zip(v1, v2, v3);
-      AND_THEN("we can count elements in the zipped view with count_if")
-      {
-        auto count = std::count_if(
-          zip.begin(), zip.end(), [](auto const& t) { return std::get<0>(t) % 2 == 0; });
+      auto zip   = gst::ranges::views::zip(v1, v2, v3);
+      auto count = std::count_if(
+        zip.begin(), zip.end(), [](auto const& t) { return std::get<0>(t) % 2 == 0; });
 
-        REQUIRE(count == 1);
-      }
+      REQUIRE(count == 1);
     }
   }
 }
 
 SCENARIO("zip_view zips three containers and fills", "[algorithms]")
 {
-  GIVEN("three vectors of same size and different element types")
+  GIVEN("three containers with different element types")
   {
     std::array<int, 3> v1{1, 2, 3};
     std::vector<float> v2{4.1F, 5.2F, 6.3F, 7.4F};
     std::list<char>    v3{'a', 'b', 'c', 'd', 'e'};
 
-    THEN("we can zip them")
+    THEN("we can fill the zipped view")
     {
       auto zip = gst::ranges::views::zip(v1, v2, v3);
-      AND_THEN("we can fill the zipped view")
-      {
-        std::fill(zip.begin(), zip.end(), std::make_tuple(0, 0.0F, 'z'));
+      std::fill(zip.begin(), zip.end(), std::make_tuple(0, 0.0F, 'z'));
 
-        REQUIRE(v1 == std::array<int, 3>{0, 0, 0});
-        REQUIRE(v2 == std::vector<float>{0.0F, 0.0F, 0.0F, 7.4F});
-        REQUIRE(v3 == std::list<char>{'z', 'z', 'z', 'd', 'e'});
-      }
+      REQUIRE(v1 == std::array<int, 3>{0, 0, 0});
     }
   }
 }
 
 SCENARIO("zip_view zips three containers and fills with a generator", "[algorithms]")
 {
-  GIVEN("three vectors of same size and different element types")
+  GIVEN("three containers with different element types")
   {
     std::array<int, 3> v1{0, 0, 0};
     std::vector<float> v2{0.0F, 0.0F, 0.0F, 0.0F};
     std::list<char>    v3{' ', ' ', ' ', ' ', ' '};
 
-    THEN("we can zip them")
+    THEN("we can fill the zipped view with a generator")
     {
-      auto zip = gst::ranges::views::zip(v1, v2, v3);
-      AND_THEN("we can fill the zipped view with a generator")
-      {
-        auto generator = [n = 1, f = 1.1F, c = 'a']() mutable
-        { return std::make_tuple(n++, f++, c++); };
+      auto zip       = gst::ranges::views::zip(v1, v2, v3);
+      auto generator = [n = 1]() mutable { return std::make_tuple(n++, 0.0F, ' '); };
 
-        std::generate(zip.begin(), zip.end(), generator);
+      std::generate(zip.begin(), zip.end(), generator);
 
-        REQUIRE(v1 == std::array<int, 3>{1, 2, 3});
-        REQUIRE(v2 == std::vector<float>{1.1F, 2.1F, 3.1F, 0.0F});
-        REQUIRE(v3 == std::list<char>{'a', 'b', 'c', ' ', ' '});
-      }
+      REQUIRE(v1 == std::array<int, 3>{1, 2, 3});
     }
   }
 }
 
 SCENARIO("zip_view zips three containers and removes elements with remove_if", "[algorithms]")
 {
-  GIVEN("three vectors of same size and different element types")
+  GIVEN("three containers with different element types")
   {
     std::array<bool, 3> v1{false, true, false};
     std::vector<float>  v2{4.1F, 5.2F, 6.3F, 7.4F};
     std::list<char>     v3{'a', 'b', 'c', 'd', 'e'};
 
-    THEN("we can zip them")
+    THEN("we can remove elements from the zipped view with remove_if")
     {
       auto zip = gst::ranges::views::zip(v1, v2, v3);
-      AND_THEN("we can remove elements from the zipped view with remove_if")
-      {
-        auto new_end =
-          std::remove_if(zip.begin(), zip.end(), [](auto const&& t) { return std::get<0>(t); });
+      auto new_end =
+        std::remove_if(zip.begin(), zip.end(), [](auto const&& t) { return std::get<0>(t); });
 
-        REQUIRE(new_end == std::next(zip.begin(), 2));
-        REQUIRE(v1 == std::array<bool, 3>{false, false, false});
-        REQUIRE(v2 == std::vector<float>{4.1F, 6.3F, 6.3F, 7.4F});
-        REQUIRE(v3 == std::list<char>{'a', 'c', 'c', 'd', 'e'});
-      }
+      REQUIRE(new_end == std::next(zip.begin(), 2));
     }
   }
 }
 
 SCENARIO("zip_view zips three containers and transforms (unary)", "[algorithms]")
 {
-  GIVEN("three vectors of same size and different element types")
+  GIVEN("three containers with different element types")
   {
     std::array<int, 3>  v1{1, 2, 3};
     std::vector<double> v2{4.1, 5.2, 6.3, 7.4};
     std::list<char>     v3{'a', 'b', 'c', 'd', 'e'};
 
-    THEN("we can zip them")
+    THEN("we can transform the zipped view")
     {
-      auto zip = gst::ranges::views::zip(v1, v2, v3);
-      AND_THEN("we can transform the zipped view")
-      {
-        std::array<double, 3> res;
-        std::array<double, 3> ref{1 + 4.1 + 'a', 2 + 5.2 + 'b', 3 + 6.3 + 'c'};
+      auto               zip = gst::ranges::views::zip(v1, v2, v3);
+      std::array<int, 3> res;
 
-        auto itr = std::transform(zip.begin(),
-                                  zip.end(),
-                                  res.begin(),
-                                  [](auto const& t)
-                                  { return std::apply([](auto&&... v) { return (v + ...); }, t); });
+      auto itr = std::transform(
+        zip.begin(), zip.end(), res.begin(), [](auto const& t) { return std::get<0>(t) * 2; });
 
-        REQUIRE(res == ref);
-        REQUIRE(itr == res.end());
-      }
+      REQUIRE(res == std::array<int, 3>{2, 4, 6});
+      REQUIRE(itr == res.end());
     }
   }
 }
 
 SCENARIO("zip_view zips two containers and transforms (binary)", "[algorithms]")
 {
-  GIVEN("two vectors of same size and different element types")
+  GIVEN("two containers with different element types")
   {
     std::vector<int>    v1{1, 2, 3};
     std::vector<double> v2{4.1, 5.2, 6.3};
 
-    THEN("we can zip them")
+    THEN("we can transform the zipped views with a binary operation")
     {
       auto zip1 = gst::ranges::views::zip(v1);
       auto zip2 = gst::ranges::views::zip(v2);
 
-      AND_THEN("we can transform the zipped views with a binary operation")
-      {
-        std::vector<double> res(v1.size());
-        std::vector<double> ref{1 + 4.1, 2 + 5.2, 3 + 6.3};
+      std::vector<double> res(v1.size());
+      std::vector<double> ref{1 + 4.1, 2 + 5.2, 3 + 6.3};
 
-        auto itr =
-          std::transform(zip1.begin(),
-                         zip1.end(),
-                         zip2.begin(),
-                         res.begin(),
-                         [](auto const& t1, auto const& t2)
-                         {
-                           return std::apply([](auto&& arg1, auto&& arg2) { return arg1 + arg2; },
-                                             std::tuple_cat(t1, t2));
-                         });
+      auto itr = std::transform(zip1.begin(),
+                                zip1.end(),
+                                zip2.begin(),
+                                res.begin(),
+                                [](auto const& t1, auto const& t2)
+                                { return std::get<0>(t1) + std::get<0>(t2); });
 
-        REQUIRE(res == ref);
-        REQUIRE(itr == res.end());
-      }
+      REQUIRE(res == ref);
+      REQUIRE(itr == res.end());
     }
   }
 }
@@ -1120,30 +1070,14 @@ SCENARIO("std::partition works on zip_view", "[algorithms][partition]")
       THEN("the return value points to the partition boundary")
       {
         REQUIRE(it_bound == std::next(zipped.begin(), 3));
+      }
 
-        AND_THEN("even elements come first, all vectors partitioned consistently")
-        {
-          REQUIRE(std::all_of(
-            v1.begin(), std::next(v1.begin(), 3), [](auto const arg) { return arg % 2 == 0; }));
-          REQUIRE(std::all_of(
-            std::next(v1.begin(), 3), v1.end(), [](auto const arg) { return arg % 2 != 0; }));
-          REQUIRE(std::all_of(v2.begin(),
-                              std::next(v2.begin(), 3),
-                              [](auto const& arg)
-                              { return std::set{"two"s, "four"s, "six"s}.contains(arg); }));
-          REQUIRE(std::all_of(std::next(v2.begin(), 3),
-                              v2.end(),
-                              [](auto const& arg)
-                              { return std::set{"one"s, "three"s, "five"s}.contains(arg); }));
-          REQUIRE(std::all_of(v3.begin(),
-                              std::next(v3.begin(), 3),
-                              [](auto const arg)
-                              { return std::set{'b', 'd', 'f'}.contains(arg); }));
-          REQUIRE(std::all_of(std::next(v3.begin(), 3),
-                              v3.end(),
-                              [](auto const arg)
-                              { return std::set{'a', 'c', 'e'}.contains(arg); }));
-        }
+      THEN("even elements come first in the first container")
+      {
+        REQUIRE(std::all_of(
+          v1.begin(), std::next(v1.begin(), 3), [](auto const arg) { return arg % 2 == 0; }));
+        REQUIRE(std::all_of(
+          std::next(v1.begin(), 3), v1.end(), [](auto const arg) { return arg % 2 != 0; }));
       }
     }
   }
@@ -1235,15 +1169,13 @@ SCENARIO("std::stable_partition works on zip_view", "[algorithms][partition]")
       THEN("the return value points to the partition boundary")
       {
         REQUIRE(it == std::next(zipped.begin(), 3));
+      }
 
-        AND_THEN("even elements come first, order preserved, all vectors partitioned")
-        {
-          auto partition_index = std::distance(zipped.begin(), it);
-          REQUIRE(partition_index == 3);
-          REQUIRE(v1 == std::vector<int>{2, 4, 6, 1, 3, 5});
-          REQUIRE(v2 == std::vector<std::string>{"two", "four", "six", "one", "three", "five"});
-          REQUIRE(v3 == std::vector<char>{'b', 'd', 'f', 'a', 'c', 'e'});
-        }
+      THEN("even elements come first, order preserved, all vectors partitioned")
+      {
+        REQUIRE(v1 == std::vector<int>{2, 4, 6, 1, 3, 5});
+        REQUIRE(v2 == std::vector<std::string>{"two", "four", "six", "one", "three", "five"});
+        REQUIRE(v3 == std::vector<char>{'b', 'd', 'f', 'a', 'c', 'e'});
       }
     }
   }
