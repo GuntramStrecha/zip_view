@@ -13,6 +13,7 @@
 #include <array>
 #include <deque>
 #include <list>
+#include <numeric>
 #include <ranges>
 #include <string>
 #include <tuple>
