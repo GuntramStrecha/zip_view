@@ -251,14 +251,14 @@ private:
   template <std::size_t... Is>
   auto subscripts(std::ptrdiff_t const index, detail::index_sequence<Is...>) -> references
   {
-    return std::tie(*std::next(std::get<Is>(views_).begin(), index)...);
+    return references(*std::next(std::get<Is>(views_).begin(), index)...);
   }
 
   template <std::size_t... Is>
   auto subscripts(std::ptrdiff_t const index,
                   detail::index_sequence<Is...>) const -> const_references
   {
-    return std::tie(*std::next(std::get<Is>(views_).begin(), index)...);
+    return const_references(*std::next(std::get<Is>(views_).begin(), index)...);
   }
 
 public:
@@ -310,13 +310,13 @@ public:
     template <std::size_t... Is>
     auto dereference(detail::index_sequence<Is...>) -> deref_tuple<Is...>
     {
-      return std::tie(*std::get<Is>(iters_)...);
+      return deref_tuple<Is...>(*std::get<Is>(iters_)...);
     }
 
     template <std::size_t... Is>
     auto dereference(detail::index_sequence<Is...>) const -> deref_tuple<Is...>
     {
-      return std::tie(*std::get<Is>(iters_)...);
+      return deref_tuple<Is...>(*std::get<Is>(iters_)...);
     }
 
   public:
