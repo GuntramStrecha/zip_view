@@ -9,7 +9,8 @@
 #include <catch2/catch_test_macros.hpp>
 #endif
 
-#include <algorithm>
+#include <catch2/catch_approx.hpp>
+
 #include <array>
 #include <deque>
 #include <forward_list>
@@ -20,6 +21,33 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+SCENARIO("zip_view with various container combinations", "[zip_view]")
+{
+  GIVEN("Two vectors of int and char")
+  {
+    std::vector<int>  vec1 = {1, 2, 3};
+    std::vector<char> vec2 = {'a', 'b', 'c'};
+
+    auto gst_zipped = gst::ranges::views::zip(vec1, vec2);
+    auto std_zipped = std::ranges::views::zip(vec1, vec2);
+
+    THEN("The sizes match") { REQUIRE(gst_zipped.size() == std_zipped.size()); }
+    THEN("The view is not empty") { REQUIRE_FALSE(gst_zipped.empty()); }
+  }
+
+  GIVEN("Two vectors of same type")
+  {
+    std::vector<int> vec1 = {1, 2, 3};
+    std::vector<int> vec2 = {4, 5, 6};
+
+    auto gst_zipped = gst::ranges::views::zip(vec1, vec2);
+    auto std_zipped = std::ranges::views::zip(vec1, vec2);
+
+    THEN("The sizes match") { REQUIRE(gst_zipped.size() == std_zipped.size()); }
+    THEN("The view is not empty") { REQUIRE_FALSE(gst_zipped.empty()); }
+  }
+}
 
 SCENARIO("Comparing zip_view with std::ranges::zip_view using different containers and lengths",
          "[zip_view]")
@@ -536,24 +564,21 @@ SCENARIO("Testing nested zip_views (zip of zip_views)", "[zip_view][nested]")
           auto tuple0 = std::get<0>(elem0);
           REQUIRE(std::get<0>(tuple0) == 1);
           REQUIRE(std::get<1>(tuple0) == 4);
-          REQUIRE(std::get<1>(elem0) > 1.0F);
-          REQUIRE(std::get<1>(elem0) < 1.2F);
+          REQUIRE(std::get<1>(elem0) == Catch::Approx(1.1F));
 
           ++it;
           auto elem1  = *it;
           auto tuple1 = std::get<0>(elem1);
           REQUIRE(std::get<0>(tuple1) == 2);
           REQUIRE(std::get<1>(tuple1) == 5);
-          REQUIRE(std::get<1>(elem1) > 2.1F);
-          REQUIRE(std::get<1>(elem1) < 2.3F);
+          REQUIRE(std::get<1>(elem1) == Catch::Approx(2.2F));
         }
 
         THEN("Can modify regular container elements through nested zip_view")
         {
           auto it          = nested.begin();
           std::get<1>(*it) = 9.9F;
-          REQUIRE(v3[0] > 9.8F);
-          REQUIRE(v3[0] < 10.0F);
+          REQUIRE(v3[0] == Catch::Approx(9.9F));
         }
       }
     }
@@ -605,10 +630,8 @@ SCENARIO("Testing nested zip_views (zip of zip_views)", "[zip_view][nested]")
           REQUIRE(v1[3] == 104);
           REQUIRE(v4[0] == 'Z');
           REQUIRE(v4[3] == 'Z');
-          REQUIRE(v5.front() > 11.0F);
-          REQUIRE(v5.front() < 11.2F);
-          REQUIRE(v5.back() > 14.3F);
-          REQUIRE(v5.back() < 14.5F);
+          REQUIRE(v5.front() == Catch::Approx(11.1F));
+          REQUIRE(v5.back() == Catch::Approx(14.4F));
         }
       }
     }
@@ -689,11 +712,9 @@ SCENARIO("Testing nested zip_views (zip of zip_views)", "[zip_view][nested]")
           ++it;
           auto elem1 = *it;
           REQUIRE((std::get<0>(elem1) == std::make_tuple(2, 20)));
-          REQUIRE(std::get<1>(elem1) > 2.1F);
-          REQUIRE(std::get<1>(elem1) < 2.3F);
+          REQUIRE(std::get<1>(elem1) == Catch::Approx(2.2F));
           REQUIRE((std::get<2>(elem1) == std::make_tuple('b', 'y')));
-          REQUIRE(std::get<3>(elem1) > 199.0);
-          REQUIRE(std::get<3>(elem1) < 201.0);
+          REQUIRE(std::get<3>(elem1) == Catch::Approx(200.0));
         }
 
         THEN("Can modify regular container elements through mixed structure")
