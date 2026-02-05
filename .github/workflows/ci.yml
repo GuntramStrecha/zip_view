@@ -104,8 +104,8 @@ jobs:
     - name: Generate code coverage
       if: matrix.cpp_compiler == 'g++' && matrix.os == 'ubuntu-latest'
       run: |
-        gcovr -r . --exclude-throw-branches --print-summary --xml-pretty -o coverage.xml
-        gcovr -r . --exclude-throw-branches --html --html-details -o coverage.html
+        gcovr -r . --filter ./include/ --filter ./tests/ --exclude-throw-branches --print-summary --xml-pretty -o coverage.xml
+        gcovr -r . --filter ./include/ --filter ./tests/ --exclude-throw-branches --html --html-details -o coverage.html
 
     - name: Publish to codecov
       if: matrix.cpp_compiler == 'g++' && matrix.os == 'ubuntu-latest'
