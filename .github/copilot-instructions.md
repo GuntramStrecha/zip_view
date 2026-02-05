@@ -132,6 +132,7 @@ This is what makes `gst::ranges::views::zip(...)` safe to use with temporaries (
 - CI uses very strict warnings with **warnings-as-errors** (`-Werror` on GCC/Clang, `/WX` on MSVC). Changes should be warning-clean across all three.
 - Formatting is expected to match `.clang-format` (notably: 2-space indentation and heavy alignment). Prefer running `cmake --build build --target clang-format` (or `pre-commit run -a`) before pushing.
 - Tests are Catch2 v3 using `SCENARIO`/`GIVEN`/`WHEN`/`THEN` with tag strings like `"[temporaries]"`, `"[algorithms]"`, etc.; add new tests under `tests/*.cpp` and keep them tag-filterable.
+- Tests follow the single responsibility principle strictly. Ensure each test verifies exactly one specific behavior, improving clarity, maintainability, and debugging efficiency.
 - Benchmarks are Catch2 benchmarks embedded in `TEST_CASE(...)` blocks; add new benchmarks under `benchmarks/*.cpp`.
 
 ## MCP server usage (GitHub)
