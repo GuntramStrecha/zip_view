@@ -84,12 +84,16 @@ jobs:
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target ZipViewExamples --parallel
 
     - name: Test
-      if: runner.os != 'Windows'
+      if: runner.os != 'Windows' && matrix.cpp_compiler != 'arm-linux-gnueabihf-g++'
       run: ${{ steps.strings.outputs.build-output-dir }}/examples/ZipViewExamples
+
+    - name: Test (Cross-compile)
+      if: matrix.cpp_compiler == 'arm-linux-gnueabihf-g++'
+      run: qemu-arm ${{ steps.strings.outputs.build-output-dir }}/examples/ZipViewExamples
       env:
-        QEMU_LD_PREFIX: ${{ matrix.cpp_compiler == 'arm-linux-gnueabihf-g++' && '/usr/arm-linux-gnueabihf' || '' }}
+        QEMU_LD_PREFIX: /usr/arm-linux-gnueabihf
 
     - name: Test (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
-      run: '& "${{ steps.strings.outputs.build-output-dir }}\\examples\\ZipViewExamples.exe"'
+      run: '& "${{ steps.strings.outputs.build-output-dir }}/examples/ZipViewExamples.exe"'
