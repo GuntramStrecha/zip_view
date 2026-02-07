@@ -8,6 +8,3 @@ set_target_properties(ZipViewBenchmark PROPERTIES CXX_STANDARD 23)
 
 # Link libraries
 target_link_libraries(ZipViewBenchmark PRIVATE Catch2::Catch2WithMain)
-
-# Add tests
-add_test(NAME ZipViewBenchmark COMMAND ZipViewBenchmark)

@@ -1,4 +1,4 @@
-name: CI
+name: Tests
 
 on:
   push:
@@ -17,7 +17,6 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     strategy:
-      # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
       fail-fast: false
 
       # Set up a matrix to run the following configurations:
@@ -27,8 +26,6 @@ jobs:
       # 4. <Linux ARM64, Release, GCC compiler on ARM runner>
       # 5. <Linux ARM64, Release, Clang compiler on ARM runner>
       # 6. <Linux ARM32, Release, cross-compiled with GCC on ARM runner>
-      #
-      # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
         os:
           - ubuntu-latest
@@ -73,6 +70,10 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf qemu-user libc6-armhf-cross libstdc++6-armhf-cross
 
+    - name: Install gcovr
+      if: matrix.cpp_compiler == 'g++' && matrix.os == 'ubuntu-latest'
+      run: sudo apt-get install -y gcovr
+
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
@@ -86,26 +87,16 @@ jobs:
         -S ${{ github.workspace }}
 
     - name: Build
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target ZipViewTests --parallel
 
     - name: Test
-      working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest --build-config ${{ matrix.build_type }} --output-on-failure
+      run: ctest --test-dir ${{ steps.strings.outputs.build-output-dir }} --output-on-failure
       env:
         QEMU_LD_PREFIX: ${{ matrix.cpp_compiler == 'arm-linux-gnueabihf-g++' && '/usr/arm-linux-gnueabihf' || '' }}
 
-    - name: Install gcovr
-      if: matrix.cpp_compiler == 'g++' && matrix.os == 'ubuntu-latest'
-      run: sudo apt-get install -y gcovr
-
     - name: Generate code coverage
       if: matrix.cpp_compiler == 'g++' && matrix.os == 'ubuntu-latest'
-      run: |
-        gcovr -r . --filter ./include/ --exclude-throw-branches --print-summary --xml-pretty -o coverage.xml
-        gcovr -r . --filter ./include/ --exclude-throw-branches --html --html-details -o coverage.html
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target coverage
 
     - name: Publish to codecov
       if: matrix.cpp_compiler == 'g++' && matrix.os == 'ubuntu-latest'
@@ -114,11 +105,11 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         flags: ${{ runner.os }}
         name: ${{ runner.os }}-coverage
-        files: ./coverage.xml
+        files: ${{ steps.strings.outputs.build-output-dir }}/coverage.xml
 
     - name: Upload Coverage Report
       if: matrix.cpp_compiler == 'g++' && matrix.os == 'ubuntu-latest'
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report
-        path: coverage.html
+        path: ${{ steps.strings.outputs.build-output-dir }}/coverage.html

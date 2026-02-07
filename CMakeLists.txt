@@ -67,28 +67,39 @@ endif()
 if(CODE_COVERAGE)
   find_program(GCOVR_EXE NAMES gcovr)
   if(GCOVR_EXE)
-    # For Clang, use llvm-cov gcov wrapper
+    # Common gcovr args
+    set(GCOVR_FILTER_ARGS --filter ${CMAKE_SOURCE_DIR}/include/ --exclude-throw-branches)
+    set(GCOVR_GCOV_OPTION "")
+
+    # For Clang, prefer using llvm-cov as the gcov wrapper
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
       find_program(LLVM_COV_EXE NAMES llvm-cov)
       if(LLVM_COV_EXE)
-        add_custom_target(
-          coverage
-          COMMAND ${GCOVR_EXE} -r ${CMAKE_SOURCE_DIR} --gcov-executable "${LLVM_COV_EXE} gcov" --filter ${CMAKE_SOURCE_DIR}/include/ --exclude-throw-branches --html --html-details -o coverage.html
-          WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-          COMMENT "Generating code coverage report with gcovr and llvm-cov for include folder only"
-        )
+        set(GCOVR_GCOV_OPTION --gcov-executable "${LLVM_COV_EXE} gcov")
       else()
         message(WARNING "llvm-cov not found! Coverage report will not be generated for Clang.")
+        set(SKIP_COVERAGE TRUE)
       endif()
-    else()
+    endif()
+
+    if(NOT SKIP_COVERAGE)
+      add_custom_target(
+        coverage-html
+        COMMAND ${GCOVR_EXE} -r ${CMAKE_SOURCE_DIR} ${GCOVR_GCOV_OPTION} ${GCOVR_FILTER_ARGS} --html --html-details -o coverage.html
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        COMMENT "Generating code coverage HTML report with gcovr for include folder only"
+      )
+      add_custom_target(
+        coverage-xml
+        COMMAND ${GCOVR_EXE} -r ${CMAKE_SOURCE_DIR} ${GCOVR_GCOV_OPTION} ${GCOVR_FILTER_ARGS} --xml-pretty -o coverage.xml
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        COMMENT "Generating code coverage XML report with gcovr for include folder only"
+      )
       add_custom_target(
         coverage
-        COMMAND ${GCOVR_EXE} -r ${CMAKE_SOURCE_DIR} --filter ${CMAKE_SOURCE_DIR}/include/ --exclude-throw-branches --html --html-details -o coverage.html
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-        COMMENT "Generating code coverage report with gcovr for include folder only"
+        DEPENDS coverage-html coverage-xml
+        COMMENT "Aggregate target to generate all coverage reports"
       )
     endif()
-  else()
-    message(WARNING "gcovr not found! Coverage report will not be generated.")
   endif()
 endif()
