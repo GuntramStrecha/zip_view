@@ -10,13 +10,11 @@
 #endif
 #include <catch2/catch_approx.hpp>
 
-#include <algorithm>
 #include <array>
 #include <deque>
 #include <forward_list>
 #include <iterator>
 #include <list>
-#include <string>
 #include <type_traits>
 #include <vector>
 
@@ -244,6 +242,39 @@ SCENARIO("zip_view iterator default constructor", "[iterator]")
       typename decltype(zipped)::iterator it1;
       typename decltype(zipped)::iterator it2;
       REQUIRE(it1 == it2);
+    }
+  }
+}
+
+SCENARIO("zip_view iterator inequality comparison", "[iterator]")
+{
+  GIVEN("A zip_view over three vectors")
+  {
+    std::vector<int>  vec1 = {1, 2, 3, 4, 5};
+    std::vector<char> vec2 = {'a', 'b', 'c', 'd', 'e'};
+    std::vector<int>  vec3 = {10, 20, 30, 40, 50};
+
+    auto zipped = gst::ranges::views::zip(vec1, vec2, vec3);
+
+    THEN("iterators at different positions compare unequal")
+    {
+      auto it1 = zipped.begin();
+      auto it2 = zipped.begin();
+      ++it2;
+
+      REQUIRE(it1 != it2);
+      REQUIRE_FALSE(it1 == it2);
+    }
+
+    THEN("iterators at far apart positions compare unequal")
+    {
+      auto it1 = zipped.begin();
+      auto it2 = zipped.begin();
+      ++it2;
+      ++it2;
+      ++it2;
+
+      REQUIRE(it1 != it2);
     }
   }
 }

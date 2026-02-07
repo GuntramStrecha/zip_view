@@ -251,14 +251,14 @@ private:
   template <std::size_t... Is>
   auto subscripts(std::ptrdiff_t const index, detail::index_sequence<Is...>) -> references
   {
-    return std::tie(*std::next(std::get<Is>(views_).begin(), index)...);
+    return references(*std::next(std::get<Is>(views_).begin(), index)...);
   }
 
   template <std::size_t... Is>
   auto subscripts(std::ptrdiff_t const index,
                   detail::index_sequence<Is...>) const -> const_references
   {
-    return std::tie(*std::next(std::get<Is>(views_).begin(), index)...);
+    return const_references(*std::next(std::get<Is>(views_).begin(), index)...);
   }
 
 public:
@@ -310,13 +310,13 @@ public:
     template <std::size_t... Is>
     auto dereference(detail::index_sequence<Is...>) -> deref_tuple<Is...>
     {
-      return std::tie(*std::get<Is>(iters_)...);
+      return deref_tuple<Is...>(*std::get<Is>(iters_)...);
     }
 
     template <std::size_t... Is>
     auto dereference(detail::index_sequence<Is...>) const -> deref_tuple<Is...>
     {
-      return std::tie(*std::get<Is>(iters_)...);
+      return deref_tuple<Is...>(*std::get<Is>(iters_)...);
     }
 
   public:
@@ -434,14 +434,12 @@ public:
       return !(*this < other);
     }
 
-    // Friend function for n + iterator
     template <bool B = is_random_access, typename std::enable_if<B, int>::type = 0>
     friend auto operator+(difference_type const n, basic_iterator const& it) -> basic_iterator
     {
       return it + n;
     }
 
-    // Custom iter_swap for proper swapping of zipped elements
     friend auto iter_swap(basic_iterator const& lhs, basic_iterator const& rhs) -> void
     {
       iter_swap_impl(lhs, rhs, INDICES);
