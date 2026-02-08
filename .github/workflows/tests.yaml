@@ -18,46 +18,48 @@ jobs:
 
     strategy:
       fail-fast: false
-
-      # Set up a matrix to run the following configurations:
-      # 1. <Windows, Release, latest MSVC compiler toolchain on the default runner image, default generator>
-      # 2. <Linux x64, Release, latest GCC compiler toolchain on the default runner image, default generator>
-      # 3. <Linux x64, Release, latest Clang compiler toolchain on the default runner image, default generator>
-      # 4. <Linux ARM64, Release, GCC compiler on ARM runner>
-      # 5. <Linux ARM64, Release, Clang compiler on ARM runner>
-      # 6. <Linux ARM32, Release, cross-compiled with GCC on ARM runner>
       matrix:
-        os:
-          - ubuntu-latest
-          - ubuntu-24.04-arm
-          - windows-latest
-        cpp_compiler:
-          - g++
-          - clang++
-          - cl
-        build_type:
-          - Release
-        cmake_flags: [""]
         include:
+          # ubuntu-latest with GCC (coverage build)
+          - os: ubuntu-latest
+            cpp_compiler: g++
+            build_type: Release
+            cmake_flags: "-DCODE_COVERAGE=ON"
+          # ubuntu-latest with GCC (no coverage)
+          - os: ubuntu-latest
+            cpp_compiler: g++
+            build_type: Release
+            cmake_flags: ""
+          # ubuntu-latest with Clang
+          - os: ubuntu-latest
+            cpp_compiler: clang++
+            build_type: Release
+            cmake_flags: ""
+          # ubuntu-24.04-arm with GCC (native ARM64)
+          - os: ubuntu-24.04-arm
+            cpp_compiler: g++
+            build_type: Release
+            cmake_flags: ""
+          # ubuntu-24.04-arm with Clang (native ARM64)
+          - os: ubuntu-24.04-arm
+            cpp_compiler: clang++
+            build_type: Release
+            cmake_flags: ""
+          # ubuntu-24.04-arm with ARM32 cross-compile
           - os: ubuntu-24.04-arm
             cpp_compiler: arm-linux-gnueabihf-g++
             build_type: Release
             cmake_flags: "-DCMAKE_CROSSCOMPILING_EMULATOR=qemu-arm"
-        exclude:
+          # windows-latest with MSVC
           - os: windows-latest
-            cpp_compiler: g++
-          - os: windows-latest
-            cpp_compiler: clang++
-          - os: ubuntu-latest
             cpp_compiler: cl
-          - os: ubuntu-24.04-arm
-            cpp_compiler: cl
+            build_type: Release
+            cmake_flags: ""
 
     steps:
     - uses: actions/checkout@v4
 
     - name: Set reusable strings
-      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
       id: strings
       shell: bash
       run: |
@@ -71,17 +73,13 @@ jobs:
         sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf qemu-user libc6-armhf-cross libstdc++6-armhf-cross
 
     - name: Install gcovr
-      if: matrix.cpp_compiler == 'g++' && matrix.os == 'ubuntu-latest'
+      if: matrix.cmake_flags == '-DCODE_COVERAGE=ON'
       run: sudo apt-get install -y gcovr
 
     - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_CXX_STANDARD=11
-        -DCMAKE_CXX_STANDARD_REQUIRED=True
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         ${{ matrix.cmake_flags }}
         -S ${{ github.workspace }}
@@ -95,11 +93,11 @@ jobs:
         QEMU_LD_PREFIX: ${{ matrix.cpp_compiler == 'arm-linux-gnueabihf-g++' && '/usr/arm-linux-gnueabihf' || '' }}
 
     - name: Generate code coverage
-      if: matrix.cpp_compiler == 'g++' && matrix.os == 'ubuntu-latest'
+      if: matrix.cmake_flags == '-DCODE_COVERAGE=ON'
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target coverage
 
     - name: Publish to codecov
-      if: matrix.cpp_compiler == 'g++' && matrix.os == 'ubuntu-latest'
+      if: matrix.cmake_flags == '-DCODE_COVERAGE=ON'
       uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
@@ -108,7 +106,7 @@ jobs:
         files: ${{ steps.strings.outputs.build-output-dir }}/coverage.xml
 
     - name: Upload Coverage Report
-      if: matrix.cpp_compiler == 'g++' && matrix.os == 'ubuntu-latest'
+      if: matrix.cmake_flags == '-DCODE_COVERAGE=ON'
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report

@@ -21,16 +21,6 @@ def load_json_if_exists(path):
         return {"error": f"failed to parse {path}: {e}"}
 
 
-def load_console_if_exists(path):
-    if not os.path.exists(path):
-        return None
-    try:
-        with open(path) as f:
-            return f.read()
-    except Exception as e:
-        return f"failed to read {path}: {e}"
-
-
 def create_summary(merged, out_path):
     lines = []
     lines.append("## Benchmark Results Summary (All Architectures)\n")
@@ -48,13 +38,7 @@ def create_summary(merged, out_path):
                 lines.append(f"{name}: {time} {unit}")
             lines.append("```\n")
         else:
-            # Fallback: include a short note and any console snippet if present
-            console = block.get("console")
-            if console:
-                lines.append("No parsed benchmarks; console output follows (first 200 chars):\n")
-                lines.append(console[:200].replace('```', "`` `") + "\n")
-            else:
-                lines.append("No benchmark data found\n")
+            lines.append("No benchmark data found\n")
     with open(out_path, "w") as f:
         f.write("\n".join(lines))
 
@@ -73,30 +57,17 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
 
     merged = []
+    console_lines = []
 
     for arch in arches:
         json_path = os.path.join(artifacts_dir, f"benchmark-results-{arch}", "benchmark_results.json")
-        console_path = os.path.join(artifacts_dir, f"benchmark-results-{arch}", "benchmark_console.txt")
 
         data = load_json_if_exists(json_path)
-        console = None
-        if data is None:
-            # try to fallback to console
-            console = load_console_if_exists(console_path)
-            if console is not None:
-                entry = {"arch": arch, "results": {"error": "no json, console available"}, "console": console}
-            else:
-                entry = {"arch": arch, "results": None}
-        else:
-            entry = {"arch": arch, "results": data}
-            # still attach console snippet if available (handy for debugging)
-            console = load_console_if_exists(console_path)
-            if console is not None:
-                entry["console"] = console[:1000]
+        entry = {"arch": arch, "results": data}
         merged.append(entry)
 
-    merged_path = os.path.join(out_dir, "benchmark_results_merged.json")
-    with open(merged_path, "w") as f:
+    merged_json_path = os.path.join(out_dir, "benchmark_results_merged.json")
+    with open(merged_json_path, "w") as f:
         json.dump(merged, f, indent=2)
 
     # Create human-readable summary
@@ -104,8 +75,7 @@ def main():
     create_summary(merged, summary_path)
 
     # Print results for logs
-    print("Wrote:", merged_path)
-    print(open(merged_path).read())
+    print("Wrote:", merged_json_path)
     print("---\nSummary:\n")
     with open(summary_path) as f:
         print(f.read())
