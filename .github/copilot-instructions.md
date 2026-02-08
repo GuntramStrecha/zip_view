@@ -76,10 +76,10 @@ clang-tidy -p build path/to/file.cpp
 
 ### Coverage / sanitizers
 
-- Coverage is enabled for `ZipViewTests` on GCC/Clang via the `CODE_COVERAGE` option (default ON in `tests/CMakeLists.txt`). Disable it if you want a “normal” build:
+- Coverage is disabled by default. Enable it for `ZipViewTests` on GCC/Clang via the `CODE_COVERAGE` option:
 
 ```bash
-cmake -S . -B build -DCODE_COVERAGE=OFF
+cmake -S . -B build -DCODE_COVERAGE=ON
 ```
 
 - If `gcovr` is installed, a `coverage` target may be available:

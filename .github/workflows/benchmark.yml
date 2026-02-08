@@ -69,8 +69,6 @@ jobs:
       run: >
         cmake -B ${{ github.workspace }}/${{ matrix.build_dir }}
         -DCMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }}
-        -DCMAKE_CXX_STANDARD=23
-        -DCMAKE_CXX_STANDARD_REQUIRED=True
         -DCMAKE_BUILD_TYPE=Release
         ${{ matrix.cmake_flags }}
         -S ${{ github.workspace }}
@@ -81,13 +79,16 @@ jobs:
     - name: Run Benchmarks
       run: |
         cd ${{ github.workspace }}/${{ matrix.build_dir }}
-        ${{ matrix.run_prefix }} ./benchmarks/ZipViewBenchmark --reporter console::out=-::colour-mode=none 2>&1 | tee benchmark_results.txt
+        # Produce JSON output from Google Benchmark and save console output as well
+        ${{ matrix.run_prefix }} ./benchmarks/ZipViewBenchmark --benchmark_format=json --benchmark_out=benchmark_results.json 2>&1 | tee benchmark_console.txt
 
     - name: Upload Benchmark Results
       uses: actions/upload-artifact@v4
       with:
         name: benchmark-results-${{ matrix.arch }}
-        path: ${{ github.workspace }}/${{ matrix.build_dir }}/benchmark_results.txt
+        path: |
+          ${{ github.workspace }}/${{ matrix.build_dir }}/benchmark_results.json
+          ${{ github.workspace }}/${{ matrix.build_dir }}/benchmark_console.txt
 
   merge-results:
     needs: benchmark
@@ -104,46 +105,20 @@ jobs:
     - name: Merge benchmark results
       run: |
         mkdir -p merged
-        echo "# Combined Benchmark Results" > merged/benchmark_results_merged.txt
-        echo "Generated: $(date -u)" >> merged/benchmark_results_merged.txt
-        echo "" >> merged/benchmark_results_merged.txt
-
-        for arch in x86_64 x86_32 arm64 arm32; do
-          if [ -f "artifacts/benchmark-results-${arch}/benchmark_results.txt" ]; then
-            echo "========================================" >> merged/benchmark_results_merged.txt
-            echo "Architecture: ${arch}" >> merged/benchmark_results_merged.txt
-            echo "========================================" >> merged/benchmark_results_merged.txt
-            cat "artifacts/benchmark-results-${arch}/benchmark_results.txt" >> merged/benchmark_results_merged.txt
-            echo "" >> merged/benchmark_results_merged.txt
-          fi
-        done
-
-        cat merged/benchmark_results_merged.txt
+        python3 ./.github/scripts/merge_benchmarks.py --artifacts-dir artifacts --out-dir merged
+        echo "Merged files:" && ls -l merged || true
 
     - name: Create summary markdown
       run: |
-        cd merged
-        echo "## Benchmark Results Summary (All Architectures)" > benchmark_summary.md
-        echo "" >> benchmark_summary.md
-
-        for arch in x86_64 x86_32 arm64 arm32; do
-          if [ -f "../artifacts/benchmark-results-${arch}/benchmark_results.txt" ]; then
-            echo "### ${arch}" >> benchmark_summary.md
-            echo '```' >> benchmark_summary.md
-            grep -A 5 "benchmark name" "../artifacts/benchmark-results-${arch}/benchmark_results.txt" | head -100 >> benchmark_summary.md || echo "No benchmark data found" >> benchmark_summary.md
-            echo '```' >> benchmark_summary.md
-            echo "" >> benchmark_summary.md
-          fi
-        done
-
-        cat benchmark_summary.md
+        echo "Summary created by merge script:"
+        cat merged/benchmark_summary.md || echo "(no summary file found)"
 
     - name: Upload merged results
       uses: actions/upload-artifact@v4
       with:
         name: benchmark-results-merged
         path: |
-          merged/benchmark_results_merged.txt
+          merged/benchmark_results_merged.json
           merged/benchmark_summary.md
 
     - name: Add to Job Summary
@@ -152,7 +127,7 @@ jobs:
         echo "# Combined Benchmark Results (All Architectures)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo '```' >> $GITHUB_STEP_SUMMARY
-        cat merged/benchmark_results_merged.txt >> $GITHUB_STEP_SUMMARY
+        cat merged/benchmark_results_merged.json >> $GITHUB_STEP_SUMMARY
         echo '```' >> $GITHUB_STEP_SUMMARY
 
   push-results:
@@ -175,8 +150,8 @@ jobs:
       uses: benchmark-action/github-action-benchmark@v1
       with:
         name: C++ Benchmark
-        tool: 'catch2'
-        output-file-path: artifacts/benchmark_results_merged.txt
+        tool: 'google-benchmark'
+        output-file-path: artifacts/benchmark_results_merged.json
         gh-pages-branch: gh-pages
         benchmark-data-dir-path: dev/bench
         auto-push: true
