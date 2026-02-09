@@ -173,29 +173,32 @@ SCENARIO("zip_view inline usage with STL algorithms", "[temporaries]")
   {
     THEN("for_each works with inline temporary zip_view")
     {
-      int sum = 0;
+      int  sum             = 0;
+      auto add_pair_to_sum = [&](auto const& t) { sum += std::get<0>(t) + std::get<1>(t); };
       std::ranges::for_each(
         gst::ranges::views::zip(std::array<int, 3>{1, 2, 3}, std::array<char, 3>{'a', 'b', 'c'}),
-        [&](auto const& t) { sum += std::get<0>(t) + std::get<1>(t); });
+        add_pair_to_sum);
       REQUIRE(sum == (1 + 'a') + (2 + 'b') + (3 + 'c'));
     }
 
     THEN("transform works with inline temporary zip_view")
     {
       std::vector<int> out;
+      auto             sum_pair = [](auto const& t) { return std::get<0>(t) + std::get<1>(t); };
       std::ranges::transform(
         gst::ranges::views::zip(std::array<int, 3>{1, 2, 3}, std::array<char, 3>{'a', 'b', 'c'}),
         std::back_inserter(out),
-        [](auto const& t) { return std::get<0>(t) + std::get<1>(t); });
+        sum_pair);
       REQUIRE(out == std::vector<int>{1 + 'a', 2 + 'b', 3 + 'c'});
     }
 
     THEN("fold_left works with inline temporary zip_view")
     {
-      int dot = std::ranges::fold_left(
+      auto dot_acc = [](int acc, auto const& t) { return acc + (std::get<0>(t) * std::get<1>(t)); };
+      int  dot     = std::ranges::fold_left(
         gst::ranges::views::zip(std::array<int, 3>{1, 2, 3}, std::array<char, 3>{'a', 'b', 'c'}),
         0,
-        [](int acc, auto const& t) { return acc + (std::get<0>(t) * std::get<1>(t)); });
+        dot_acc);
       REQUIRE(dot == (1 * 'a' + 2 * 'b' + 3 * 'c'));
     }
   }

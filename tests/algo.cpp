@@ -14,8 +14,6 @@
 #include <array>
 #include <functional>
 #include <list>
-#include <numeric>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -31,11 +29,9 @@ SCENARIO("std::adjacent_find works on zip_view", "[algorithms][find]")
 
     WHEN("we search for adjacent elements with same first component")
     {
-      auto zipped = gst::ranges::views::zip(v1, v2, v3);
-      auto it     = std::adjacent_find(zipped.begin(),
-                                   zipped.end(),
-                                   [](auto const& a, auto const& b)
-                                   { return std::get<0>(a) == std::get<0>(b); });
+      auto zipped   = gst::ranges::views::zip(v1, v2, v3);
+      auto eq_first = [](auto const& a, auto const& b) { return std::get<0>(a) == std::get<0>(b); };
+      auto it       = std::ranges::adjacent_find(zipped, eq_first);
 
       THEN("we find the first adjacent pair")
       {
@@ -56,26 +52,26 @@ SCENARIO("std::all_of, std::any_of, std::none_of work on zip_view", "[algorithms
     std::vector<int>  v2{1, 1, 1, 1};
     std::vector<char> v3{'a', 'b', 'c', 'd'};
 
-    auto zipped = gst::ranges::views::zip(v1, v2, v3);
+    auto zipped        = gst::ranges::views::zip(v1, v2, v3);
+    auto is_even_first = [](auto const& t) { return std::get<0>(t) % 2 == 0; };
+    auto first_gt_6    = [](auto const& t) { return std::get<0>(t) > 6; };
+    auto first_gt_10   = [](auto const& t) { return std::get<0>(t) > 10; };
 
     THEN("all_of returns true when all elements satisfy the predicate")
     {
-      bool result = std::all_of(
-        zipped.begin(), zipped.end(), [](auto const& t) { return std::get<0>(t) % 2 == 0; });
+      bool result = std::ranges::all_of(zipped, is_even_first);
       REQUIRE(result == true);
     }
 
     THEN("any_of returns true when at least one element satisfies the predicate")
     {
-      bool result =
-        std::any_of(zipped.begin(), zipped.end(), [](auto const& t) { return std::get<0>(t) > 6; });
+      bool result = std::ranges::any_of(zipped, first_gt_6);
       REQUIRE(result == true);
     }
 
     THEN("none_of returns true when no elements satisfy the predicate")
     {
-      bool result = std::none_of(
-        zipped.begin(), zipped.end(), [](auto const& t) { return std::get<0>(t) > 10; });
+      bool result = std::ranges::none_of(zipped, first_gt_10);
       REQUIRE(result == true);
     }
   }
@@ -89,25 +85,19 @@ SCENARIO("std::binary_search works on sorted zip_view", "[algorithms][binary_sea
     std::vector<double> v2{1.1, 2.2, 3.3, 4.4, 5.5};
     std::vector<char>   v3{'a', 'b', 'c', 'd', 'e'};
 
-    auto zipped = gst::ranges::views::zip(v1, v2, v3);
+    auto zipped       = gst::ranges::views::zip(v1, v2, v3);
+    auto cmp_by_first = [](auto const& a, auto const& b)
+    { return std::get<0>(a) < std::get<0>(b); };
 
     THEN("binary_search finds existing elements")
     {
-      bool found = std::binary_search(zipped.begin(),
-                                      zipped.end(),
-                                      std::make_tuple(3, 0.0, '\0'),
-                                      [](auto const& a, auto const& b)
-                                      { return std::get<0>(a) < std::get<0>(b); });
+      bool found = std::ranges::binary_search(zipped, std::make_tuple(3, 0.0, '\0'), cmp_by_first);
       REQUIRE(found == true);
     }
 
     THEN("binary_search doesn't find non-existing elements")
     {
-      bool found = std::binary_search(zipped.begin(),
-                                      zipped.end(),
-                                      std::make_tuple(6, 0.0, '\0'),
-                                      [](auto const& a, auto const& b)
-                                      { return std::get<0>(a) < std::get<0>(b); });
+      bool found = std::ranges::binary_search(zipped, std::make_tuple(6, 0.0, '\0'), cmp_by_first);
       REQUIRE(found == false);
     }
   }
@@ -127,20 +117,22 @@ SCENARIO("std::copy_if works with zip_view", "[algorithms][copy]")
       std::vector<double> dest_v2(3);
       std::vector<char>   dest_v3(3);
 
-      auto zipped      = gst::ranges::views::zip(v1, v2, v3);
-      auto dest_zipped = gst::ranges::views::zip(dest_v1, dest_v2, dest_v3);
+      auto is_even_src        = [](auto const& t) { return std::get<0>(t) % 2 == 0; };
+      auto src_zip            = gst::ranges::views::zip(v1, v2, v3);
+      auto dst_zip            = gst::ranges::views::zip(dest_v1, dest_v2, dest_v3);
+      auto [src_end, dst_end] = std::ranges::copy_if(src_zip, dst_zip.begin(), is_even_src);
 
-      auto dest_end = std::copy_if(zipped.begin(),
-                                   zipped.end(),
-                                   dest_zipped.begin(),
-                                   [](auto const& t) { return std::get<0>(t) % 2 == 0; });
+      THEN("the correct number of elements are copied")
+      {
+        REQUIRE(src_end == src_zip.end());
+        REQUIRE(dst_end == dst_zip.end());
+      }
 
       THEN("only tuples with even v1 values are copied")
       {
         REQUIRE(dest_v1 == std::vector<int>{2, 4, 6});
         REQUIRE(dest_v2 == std::vector<double>{2.2, 4.4, 6.6});
         REQUIRE(dest_v3 == std::vector<char>{'b', 'd', 'f'});
-        REQUIRE(std::distance(dest_zipped.begin(), dest_end) == 3);
       }
     }
   }
@@ -163,7 +155,7 @@ SCENARIO("std::equal works with zip_view", "[algorithms][equal]")
     {
       auto zip_a  = gst::ranges::views::zip(v1a, v2a);
       auto zip_b  = gst::ranges::views::zip(v1b, v2b);
-      bool result = std::equal(zip_a.begin(), zip_a.end(), zip_b.begin());
+      bool result = std::ranges::equal(zip_a, zip_b);
       REQUIRE(result == true);
     }
 
@@ -171,7 +163,7 @@ SCENARIO("std::equal works with zip_view", "[algorithms][equal]")
     {
       auto zip_a  = gst::ranges::views::zip(v1a, v2a);
       auto zip_c  = gst::ranges::views::zip(v1c, v2c);
-      bool result = std::equal(zip_a.begin(), zip_a.end(), zip_c.begin());
+      bool result = std::ranges::equal(zip_a, zip_c);
       REQUIRE(result == false);
     }
   }
@@ -188,7 +180,7 @@ SCENARIO("std::find works on zip_view", "[algorithms][find]")
     WHEN("we search for a specific tuple")
     {
       auto zipped = gst::ranges::views::zip(v1, v2, v3);
-      auto it     = std::find(zipped.begin(), zipped.end(), std::make_tuple(3, 3.3, 'c'));
+      auto it     = std::ranges::find(zipped, std::make_tuple(3, 3.3, 'c'));
 
       THEN("we find the tuple")
       {
@@ -211,9 +203,9 @@ SCENARIO("std::find_if works on zip_view", "[algorithms][find]")
 
     WHEN("we search for an element where v1 is even")
     {
-      auto zipped = gst::ranges::views::zip(v1, v2, v3);
-      auto it     = std::find_if(
-        zipped.begin(), zipped.end(), [](auto const& t) { return std::get<0>(t) % 2 == 0; });
+      auto is_even = [](auto const& t) { return std::get<0>(t) % 2 == 0; };
+      auto zipped  = gst::ranges::views::zip(v1, v2, v3);
+      auto it      = std::ranges::find_if(zipped, is_even);
 
       THEN("we find the first even element")
       {
@@ -236,9 +228,9 @@ SCENARIO("std::find_if_not works on zip_view", "[algorithms][find]")
 
     WHEN("we search for the first element that is not even")
     {
-      auto zipped = gst::ranges::views::zip(v1, v2, v3);
-      auto it     = std::find_if_not(
-        zipped.begin(), zipped.end(), [](auto const& t) { return std::get<0>(t) % 2 == 0; });
+      auto is_even = [](auto const& t) { return std::get<0>(t) % 2 == 0; };
+      auto zipped  = gst::ranges::views::zip(v1, v2, v3);
+      auto it      = std::ranges::find_if_not(zipped, is_even);
 
       THEN("we find the first odd element")
       {
@@ -261,23 +253,20 @@ SCENARIO("std::is_sorted works on zip_view", "[algorithms][sorted]")
     std::vector<int>    unsorted_v1{3, 1, 4, 2, 5};
     std::vector<double> unsorted_v2{3.3, 1.1, 4.4, 2.2, 5.5};
 
+    auto cmp_by_first = [](auto const& a, auto const& b)
+    { return std::get<0>(a) < std::get<0>(b); };
+
     THEN("is_sorted returns true for sorted zip_view")
     {
       auto sorted_zip = gst::ranges::views::zip(sorted_v1, sorted_v2);
-      bool result     = std::is_sorted(sorted_zip.begin(),
-                                   sorted_zip.end(),
-                                   [](auto const& a, auto const& b)
-                                   { return std::get<0>(a) < std::get<0>(b); });
+      bool result     = std::ranges::is_sorted(sorted_zip, cmp_by_first);
       REQUIRE(result == true);
     }
 
     THEN("is_sorted returns false for unsorted zip_view")
     {
       auto unsorted_zip = gst::ranges::views::zip(unsorted_v1, unsorted_v2);
-      bool result       = std::is_sorted(unsorted_zip.begin(),
-                                   unsorted_zip.end(),
-                                   [](auto const& a, auto const& b)
-                                   { return std::get<0>(a) < std::get<0>(b); });
+      bool result       = std::ranges::is_sorted(unsorted_zip, cmp_by_first);
       REQUIRE(result == false);
     }
   }
@@ -298,8 +287,7 @@ SCENARIO("std::lexicographical_compare works with zip_view", "[algorithms][compa
       auto zip_a = gst::ranges::views::zip(v1a, v2a);
       auto zip_b = gst::ranges::views::zip(v1b, v2b);
 
-      bool result =
-        std::lexicographical_compare(zip_a.begin(), zip_a.end(), zip_b.begin(), zip_b.end());
+      bool result = std::ranges::lexicographical_compare(zip_a, zip_b);
 
       THEN("the first sequence is less than the second") { REQUIRE(result == true); }
     }
@@ -318,21 +306,14 @@ SCENARIO("std::mismatch works with zip_view", "[algorithms][mismatch]")
 
     WHEN("we find the first mismatch")
     {
-      auto zip_a  = gst::ranges::views::zip(v1a, v2a);
-      auto zip_b  = gst::ranges::views::zip(v1b, v2b);
-      auto result = std::mismatch(zip_a.begin(),
-                                  zip_a.end(),
-                                  zip_b.begin(),
-                                  [](auto const& a, auto const& b) {
-                                    return (std::get<0>(a) == std::get<0>(b)) &&
-                                           (std::get<1>(a) == std::get<1>(b));
-                                  });
+      auto zip_a              = gst::ranges::views::zip(v1a, v2a);
+      auto zip_b              = gst::ranges::views::zip(v1b, v2b);
+      auto [first_a, first_b] = std::ranges::mismatch(zip_a, zip_b, std::equal_to<>{});
 
       THEN("we find the mismatch at position 2")
       {
-        REQUIRE(result.first != zip_a.end());
-        REQUIRE(std::get<0>(*result.first) == 3);
-        REQUIRE(std::get<0>(*result.second) == 9);
+        REQUIRE(std::get<0>(*first_a) == 3);
+        REQUIRE(std::get<0>(*first_b) == 9);
       }
     }
   }
@@ -349,8 +330,7 @@ SCENARIO("std::replace works on zip_view", "[algorithms][replace]")
     WHEN("we replace specific tuples")
     {
       auto zipped = gst::ranges::views::zip(v1, v2, v3);
-      std::replace(
-        zipped.begin(), zipped.end(), std::make_tuple(2, 2.2, 'b'), std::make_tuple(9, 9.9, 'z'));
+      std::ranges::replace(zipped, std::make_tuple(2, 2.2, 'b'), std::make_tuple(9, 9.9, 'z'));
 
       THEN("the matching tuple is replaced")
       {
@@ -372,12 +352,12 @@ SCENARIO("std::replace_if works on zip_view", "[algorithms][replace]")
 
     WHEN("we replace elements where v1 is even")
     {
-      auto zipped = gst::ranges::views::zip(v1, v2, v3);
-      std::replace_if(
-        zipped.begin(),
-        zipped.end(),
-        [](auto const& t) { return std::get<0>(t) % 2 == 0; },
-        std::make_tuple(0, 0.0, 'X'));
+      auto const is_even_first = [](auto const& t) { return std::get<0>(t) % 2 == 0; };
+      auto const replacement   = std::make_tuple(0, 0.0, 'X');
+      auto       zipped        = gst::ranges::views::zip(v1, v2, v3);
+      auto       itr           = std::ranges::replace_if(zipped, is_even_first, replacement);
+
+      THEN("the returned iterator points to the end of the range") { REQUIRE(itr == zipped.end()); }
 
       THEN("tuples with even v1 values are replaced")
       {
@@ -400,7 +380,9 @@ SCENARIO("std::reverse works on random access zip_view", "[algorithms][reverse]"
     WHEN("we reverse the zip_view")
     {
       auto zipped = gst::ranges::views::zip(v1, v2, v3);
-      std::reverse(zipped.begin(), zipped.end());
+      auto itr    = std::ranges::reverse(zipped);
+
+      THEN("the returned iterator points to the end of the range") { REQUIRE(itr == zipped.end()); }
 
       THEN("all containers are reversed")
       {
@@ -426,10 +408,15 @@ SCENARIO("std::reverse_copy works on zip_view", "[algorithms][reverse]")
       std::vector<double> dest_v2(5);
       std::vector<char>   dest_v3(5);
 
-      auto zipped      = gst::ranges::views::zip(v1, v2, v3);
-      auto dest_zipped = gst::ranges::views::zip(dest_v1, dest_v2, dest_v3);
+      auto src_zip            = gst::ranges::views::zip(v1, v2, v3);
+      auto dst_zip            = gst::ranges::views::zip(dest_v1, dest_v2, dest_v3);
+      auto [src_end, dst_end] = std::ranges::reverse_copy(src_zip, dst_zip.begin());
 
-      std::reverse_copy(zipped.begin(), zipped.end(), dest_zipped.begin());
+      THEN("the returned iterator points to the end of the destination range")
+      {
+        REQUIRE(src_end == src_zip.end());
+        REQUIRE(dst_end == dst_zip.end());
+      }
 
       THEN("destination contains reversed elements")
       {
@@ -451,8 +438,14 @@ SCENARIO("std::rotate works on zip_view", "[algorithms][rotate]")
 
     WHEN("we rotate by 2 positions")
     {
-      auto zipped = gst::ranges::views::zip(v1, v2, v3);
-      std::rotate(zipped.begin(), zipped.begin() + 2, zipped.end());
+      auto zipped            = gst::ranges::views::zip(v1, v2, v3);
+      auto [new_first, last] = std::ranges::rotate(zipped, zipped.begin() + 2);
+
+      THEN("the returned iterators point to the new first and last positions")
+      {
+        REQUIRE(new_first == std::ranges::prev(zipped.end(), 2));
+        REQUIRE(last == zipped.end());
+      }
 
       THEN("all containers are rotated together")
       {
@@ -474,20 +467,26 @@ SCENARIO("std::rotate_copy works on zip_view", "[algorithms][rotate]")
 
     WHEN("we rotate and copy")
     {
-      std::vector<int>    dest_v1(5);
-      std::vector<double> dest_v2(5);
-      std::vector<char>   dest_v3(5);
+      std::array<int, 5>    dest_v1;
+      std::array<double, 5> dest_v2;
+      std::array<short, 5>  dest_v3;
 
-      auto zipped      = gst::ranges::views::zip(v1, v2, v3);
-      auto dest_zipped = gst::ranges::views::zip(dest_v1, dest_v2, dest_v3);
+      auto src_zip            = gst::ranges::views::zip(v1, v2, v3);
+      auto dst_zip            = gst::ranges::views::zip(dest_v1, dest_v2, dest_v3);
+      auto itr_mid            = std::next(src_zip.begin(), 2);
+      auto [src_end, dst_end] = std::ranges::rotate_copy(src_zip, itr_mid, dst_zip.begin());
 
-      std::rotate_copy(zipped.begin(), zipped.begin() + 2, zipped.end(), dest_zipped.begin());
+      THEN("the returned iterators point to the end of the source and destination ranges")
+      {
+        REQUIRE(src_end == src_zip.end());
+        REQUIRE(dst_end == dst_zip.end());
+      }
 
       THEN("destination contains rotated elements")
       {
-        REQUIRE(dest_v1 == std::vector<int>{3, 4, 5, 1, 2});
-        REQUIRE(dest_v2 == std::vector<double>{3.3, 4.4, 5.5, 1.1, 2.2});
-        REQUIRE(dest_v3 == std::vector<char>{'c', 'd', 'e', 'a', 'b'});
+        REQUIRE((dest_v1 == std::array<int, 5>{3, 4, 5, 1, 2}));
+        REQUIRE((dest_v2 == std::array<double, 5>{3.3, 4.4, 5.5, 1.1, 2.2}));
+        REQUIRE((dest_v3 == std::array<short, 5>{'c', 'd', 'e', 'a', 'b'}));
       }
     }
   }
@@ -507,15 +506,18 @@ SCENARIO("std::search works on zip_view", "[algorithms][search]")
     {
       auto zipped         = gst::ranges::views::zip(v1, v2);
       auto pattern_zipped = gst::ranges::views::zip(pattern_v1, pattern_v2);
+      auto [first, last]  = std::ranges::search(zipped, pattern_zipped);
 
-      auto it =
-        std::search(zipped.begin(), zipped.end(), pattern_zipped.begin(), pattern_zipped.end());
+      THEN("the returned iterators point to the start and end of the found subsequence")
+      {
+        REQUIRE(first == zipped.begin() + 2);
+        REQUIRE(last == zipped.begin() + 4);
+      }
 
       THEN("we find the subsequence")
       {
-        REQUIRE(it != zipped.end());
-        REQUIRE(std::get<0>(*it) == 3);
-        REQUIRE(std::get<1>(*it) == 'c');
+        REQUIRE(std::get<0>(*first) == 3);
+        REQUIRE(std::get<1>(*first) == 'c');
       }
     }
   }
@@ -530,14 +532,19 @@ SCENARIO("std::search_n works on zip_view", "[algorithms][search]")
 
     WHEN("we search for 3 consecutive occurrences")
     {
-      auto zipped = gst::ranges::views::zip(v1, v2);
-      auto it     = std::search_n(zipped.begin(), zipped.end(), 3, std::make_tuple(5, 'c'));
+      auto zipped        = gst::ranges::views::zip(v1, v2);
+      auto [first, last] = std::ranges::search_n(zipped, 3, std::make_tuple(5, 'c'));
+
+      THEN("the returned iterators point to the start and end of the found sequence")
+      {
+        REQUIRE(first == zipped.begin() + 2);
+        REQUIRE(last == zipped.begin() + 5);
+      }
 
       THEN("we find the sequence")
       {
-        REQUIRE(it != zipped.end());
-        REQUIRE(std::get<0>(*it) == 5);
-        REQUIRE(std::get<1>(*it) == 'c');
+        REQUIRE(std::get<0>(*first) == 5);
+        REQUIRE(std::get<1>(*first) == 'c');
       }
     }
   }
@@ -555,10 +562,15 @@ SCENARIO("std::swap_ranges works on zip_view", "[algorithms][swap]")
 
     WHEN("we swap the ranges")
     {
-      auto zip_a = gst::ranges::views::zip(v1a, v2a);
-      auto zip_b = gst::ranges::views::zip(v1b, v2b);
+      auto zip_a          = gst::ranges::views::zip(v1a, v2a);
+      auto zip_b          = gst::ranges::views::zip(v1b, v2b);
+      auto [end_a, end_b] = std::ranges::swap_ranges(zip_a, zip_b);
 
-      std::swap_ranges(zip_a.begin(), zip_a.end(), zip_b.begin());
+      THEN("the iterators point to the end of the ranges")
+      {
+        REQUIRE(end_a == zip_a.end());
+        REQUIRE(end_b == zip_b.end());
+      }
 
       THEN("the ranges are swapped")
       {
@@ -579,17 +591,18 @@ SCENARIO("zip_view with conditional accumulate based on boolean predicate", "[al
     std::vector<double> v2{4.1, 5.2, 6.3, 7.4};
     std::list<char>     v3{'a', 'b', 'c', 'd', 'e'};
 
-    THEN("we can conditionally accumulate based on the boolean first element")
+    WHEN("we conditionally accumulate based on the boolean first element")
     {
-      auto zip = gst::ranges::views::zip(v1, v2, v3);
-      auto sum =
-        std::accumulate(zip.begin(),
-                        zip.end(),
-                        0.0,
-                        [](auto acc, auto t)
-                        { return acc + (std::get<0>(t) ? std::get<1>(t) + std::get<2>(t) : 0); });
+      auto cond_accum = [](auto acc, auto const& t)
+      { return acc + (std::get<0>(t) ? std::get<1>(t) + std::get<2>(t) : 0); };
 
-      REQUIRE(sum == Catch::Approx(4.1F + 'a' + 6.3F + 'c'));
+      auto zip = gst::ranges::views::zip(v1, v2, v3);
+      auto sum = std::ranges::fold_left(zip, 0.0, cond_accum);
+
+      THEN("the sum is correct based on the predicate")
+      {
+        REQUIRE(sum == Catch::Approx(4.1F + 'a' + 6.3F + 'c'));
+      }
     }
   }
 }
@@ -602,12 +615,21 @@ SCENARIO("zip_view zips three containers and applies for_each", "[algorithms]")
     std::vector<float> v2{4.1F, 5.2F, 6.3F, 7.4F};
     std::list<char>    v3{'a', 'b', 'c', 'd', 'e'};
 
-    THEN("we can zip them and apply for_each to modify elements")
+    WHEN("we apply for_each to double the first element of each tuple")
     {
-      auto zip = gst::ranges::views::zip(v1, v2, v3);
-      std::for_each(zip.begin(), zip.end(), [](auto&& t) { std::get<0>(t) *= 2; });
+      auto double_first = [](auto&& t) { std::get<0>(t) *= 2; };
+      auto zip          = gst::ranges::views::zip(v1, v2, v3);
+      auto [zip_end, _] = std::ranges::for_each(zip, double_first);
 
-      REQUIRE(v1 == std::array<int, 3>{2, 4, 6});
+      THEN("the returned iterator points to the end of the range")
+      {
+        REQUIRE(zip_end == zip.end());
+      }
+
+      THEN("the first elements are doubled while others remain unchanged")
+      {
+        REQUIRE(v1 == std::array<int, 3>{2, 4, 6});
+      }
     }
   }
 }
@@ -620,13 +642,13 @@ SCENARIO("zip_view zips three containers and counts elements with count_if", "[a
     std::vector<float> v2{4.1F, 5.2F, 6.3F, 7.4F};
     std::list<char>    v3{'a', 'b', 'c', 'd', 'e'};
 
-    THEN("we can count elements in the zipped view with count_if")
+    WHEN("we count elements in the zipped view with count_if")
     {
-      auto zip   = gst::ranges::views::zip(v1, v2, v3);
-      auto count = std::count_if(
-        zip.begin(), zip.end(), [](auto const& t) { return std::get<0>(t) % 2 == 0; });
+      auto is_even_first = [](auto const& t) { return std::get<0>(t) % 2 == 0; };
+      auto zip           = gst::ranges::views::zip(v1, v2, v3);
+      auto count         = std::ranges::count_if(zip, is_even_first);
 
-      REQUIRE(count == 1);
+      THEN("the count is correct") { REQUIRE(count == 1); }
     }
   }
 }
@@ -639,12 +661,17 @@ SCENARIO("zip_view zips three containers and fills", "[algorithms]")
     std::vector<float> v2{4.1F, 5.2F, 6.3F, 7.4F};
     std::list<char>    v3{'a', 'b', 'c', 'd', 'e'};
 
-    THEN("we can fill the zipped view")
+    WHEN("we fill the zipped view")
     {
       auto zip = gst::ranges::views::zip(v1, v2, v3);
-      std::fill(zip.begin(), zip.end(), std::make_tuple(0, 0.0F, 'z'));
+      auto end = std::ranges::fill(zip, std::make_tuple(0, 0.0F, 'z'));
 
-      REQUIRE(v1 == std::array<int, 3>{0, 0, 0});
+      THEN("the returned iterator points to the end of the range") { REQUIRE(end == zip.end()); }
+
+      THEN("the containers are filled with the specified values")
+      {
+        REQUIRE(v1 == std::array<int, 3>{0, 0, 0});
+      }
     }
   }
 }
@@ -657,14 +684,18 @@ SCENARIO("zip_view zips three containers and fills with a generator", "[algorith
     std::vector<float> v2{0.0F, 0.0F, 0.0F, 0.0F};
     std::list<char>    v3{' ', ' ', ' ', ' ', ' '};
 
-    THEN("we can fill the zipped view with a generator")
+    WHEN("we fill the zipped view with a generator")
     {
-      auto zip       = gst::ranges::views::zip(v1, v2, v3);
       auto generator = [n = 1]() mutable { return std::make_tuple(n++, 0.0F, ' '); };
+      auto zip       = gst::ranges::views::zip(v1, v2, v3);
+      auto end       = std::ranges::generate(zip, generator);
 
-      std::generate(zip.begin(), zip.end(), generator);
+      THEN("the returned iterator points to the end of the range") { REQUIRE(end == zip.end()); }
 
-      REQUIRE(v1 == std::array<int, 3>{1, 2, 3});
+      THEN("the containers are filled with generated values")
+      {
+        REQUIRE(v1 == std::array<int, 3>{1, 2, 3});
+      }
     }
   }
 }
@@ -677,13 +708,24 @@ SCENARIO("zip_view zips three containers and removes elements with remove_if", "
     std::vector<float>  v2{4.1F, 5.2F, 6.3F, 7.4F};
     std::list<char>     v3{'a', 'b', 'c', 'd', 'e'};
 
-    THEN("we can remove elements from the zipped view with remove_if")
+    WHEN("we remove elements from the zipped view based on a predicate")
     {
-      auto zip = gst::ranges::views::zip(v1, v2, v3);
-      auto new_end =
-        std::remove_if(zip.begin(), zip.end(), [](auto const&& t) { return std::get<0>(t); });
+      auto zip           = gst::ranges::views::zip(v1, v2, v3);
+      auto first_is_true = [](auto const& t) { return std::get<0>(t); };
+      auto [ret, last]   = std::ranges::remove_if(zip, first_is_true);
 
-      REQUIRE(new_end == std::next(zip.begin(), 2));
+      THEN("the returned iterator points to the new end of the range")
+      {
+        REQUIRE(ret == std::ranges::next(zip.begin(), 2));
+        REQUIRE(last == zip.end());
+      }
+
+      THEN("the elements with true in the first container are removed")
+      {
+        REQUIRE(v1 == std::array<bool, 3>{false, false, false});
+        REQUIRE(v2 == std::vector<float>{4.1F, 6.3F, 6.3F, 7.4F});
+        REQUIRE(v3 == std::list<char>{'a', 'c', 'c', 'd', 'e'});
+      }
     }
   }
 }
@@ -696,16 +738,23 @@ SCENARIO("zip_view zips three containers and transforms (unary)", "[algorithms]"
     std::vector<double> v2{4.1, 5.2, 6.3, 7.4};
     std::list<char>     v3{'a', 'b', 'c', 'd', 'e'};
 
-    THEN("we can transform the zipped view")
+    WHEN("we transform the zipped views with a unary operation")
     {
-      auto               zip = gst::ranges::views::zip(v1, v2, v3);
+      auto               multiply_first_by_2 = [](auto const& t) { return std::get<0>(t) * 2; };
+      auto               zip                 = gst::ranges::views::zip(v1, v2, v3);
       std::array<int, 3> res;
+      auto [itr1, itr2] = std::ranges::transform(zip, res.begin(), multiply_first_by_2);
 
-      auto itr = std::transform(
-        zip.begin(), zip.end(), res.begin(), [](auto const& t) { return std::get<0>(t) * 2; });
+      THEN("the returned iterators point to the end of the range")
+      {
+        REQUIRE(itr1 == zip.end());
+        REQUIRE(itr2 == res.end());
+      }
 
-      REQUIRE(res == std::array<int, 3>{2, 4, 6});
-      REQUIRE(itr == res.end());
+      THEN("the transformation is applied correctly")
+      {
+        REQUIRE(res == std::array<int, 3>{2, 4, 6});
+      }
     }
   }
 }
@@ -717,23 +766,25 @@ SCENARIO("zip_view zips two containers and transforms (binary)", "[algorithms]")
     std::vector<int>    v1{1, 2, 3};
     std::vector<double> v2{4.1, 5.2, 6.3};
 
-    THEN("we can transform the zipped views with a binary operation")
+    WHEN("we transform the zipped views with a binary operation")
     {
-      auto zip1 = gst::ranges::views::zip(v1);
-      auto zip2 = gst::ranges::views::zip(v2);
+      auto add_firsts = [](auto const& t1, auto const& t2)
+      { return std::get<0>(t1) + std::get<0>(t2); };
 
+      auto                zip1 = gst::ranges::views::zip(v1);
+      auto                zip2 = gst::ranges::views::zip(v2);
       std::vector<double> res(v1.size());
       std::vector<double> ref{1 + 4.1, 2 + 5.2, 3 + 6.3};
+      auto [itr1, itr2, itr3] = std::ranges::transform(zip1, zip2, res.begin(), add_firsts);
 
-      auto itr = std::transform(zip1.begin(),
-                                zip1.end(),
-                                zip2.begin(),
-                                res.begin(),
-                                [](auto const& t1, auto const& t2)
-                                { return std::get<0>(t1) + std::get<0>(t2); });
+      THEN("the returned iterators point to the end of the ranges")
+      {
+        REQUIRE(itr1 == zip1.end());
+        REQUIRE(itr2 == zip2.end());
+        REQUIRE(itr3 == res.end());
+      }
 
-      REQUIRE(res == ref);
-      REQUIRE(itr == res.end());
+      THEN("the transformation is applied correctly") { REQUIRE(res == ref); }
     }
   }
 }
@@ -743,24 +794,24 @@ SCENARIO("std::equal_range works on sorted zip_view", "[algorithms][binary_searc
   GIVEN("Sorted vectors with duplicates")
   {
     std::vector<int>    v1{1, 2, 2, 2, 3, 4, 5};
-    std::vector<double> v2{1.1, 2.1, 2.2, 2.3, 3.3, 4.4, 5.5};
-    std::vector<char>   v3{'a', 'b', 'c', 'd', 'e', 'f', 'g'};
+    std::vector<double> v2{1.1, 2.2, 2.2, 2.2, 3.3, 4.4, 5.5};
+    std::vector<char>   v3{'a', 'b', 'b', 'b', 'c', 'd', 'e'};
 
-    WHEN("we find the equal range for value 2")
+    WHEN("we find the equal range for a specific tuple")
     {
-      auto zipped = gst::ranges::views::zip(v1, v2, v3);
-      auto range  = std::equal_range(zipped.begin(),
-                                    zipped.end(),
-                                    std::make_tuple(2, 0.0, '\0'),
-                                    [](auto const& a, auto const& b)
-                                    { return std::get<0>(a) < std::get<0>(b); });
+      auto to_find      = std::make_tuple(2, 2.2, 'b');
+      auto zipped       = gst::ranges::views::zip(v1, v2, v3);
+      auto [itr1, itr2] = std::ranges::equal_range(zipped, to_find, std::less<>{});
 
-      THEN("we get the range of all elements equal to 2")
+      THEN("the range contains the correct number of elements")
       {
-        REQUIRE(std::distance(range.first, range.second) == 3);
-        REQUIRE(std::get<0>(*range.first) == 2);
-        REQUIRE(std::get<1>(*range.first) == Catch::Approx(2.1));
-        REQUIRE(std::get<2>(*range.first) == 'b');
+        REQUIRE(std::ranges::distance(itr1, itr2) == 3);
+      }
+
+      THEN("all elements in the range are equal to the searched value")
+      {
+        auto const equal_to_to_find = [&to_find](auto const& t) { return t == to_find; };
+        REQUIRE(std::ranges::all_of(itr1, itr2, equal_to_to_find));
       }
     }
   }
@@ -770,26 +821,26 @@ SCENARIO("std::is_partitioned works on zip_view", "[algorithms][partition]")
 {
   GIVEN("A partitioned and a non-partitioned sequence")
   {
+    auto                is_even_first = [](auto const& t) { return std::get<0>(t) % 2 == 0; };
     std::vector<int>    partitioned_v1{2, 4, 6, 1, 3, 5};
     std::vector<double> partitioned_v2{2.2, 4.4, 6.6, 1.1, 3.3, 5.5};
-
     std::vector<int>    not_partitioned_v1{1, 2, 3, 4, 5, 6};
     std::vector<double> not_partitioned_v2{1.1, 2.2, 3.3, 4.4, 5.5, 6.6};
 
-    THEN("is_partitioned returns true for partitioned sequence")
+    WHEN("is_partitioned is called on a partitioned sequence")
     {
       auto zipped = gst::ranges::views::zip(partitioned_v1, partitioned_v2);
-      bool result = std::is_partitioned(
-        zipped.begin(), zipped.end(), [](auto const& t) { return std::get<0>(t) % 2 == 0; });
-      REQUIRE(result == true);
+      bool result = std::ranges::is_partitioned(zipped, is_even_first);
+
+      THEN("the result is true") { REQUIRE(result == true); }
     }
 
-    THEN("is_partitioned returns false for non-partitioned sequence")
+    WHEN("is_partitioned is called on a non-partitioned sequence")
     {
       auto zipped = gst::ranges::views::zip(not_partitioned_v1, not_partitioned_v2);
-      bool result = std::is_partitioned(
-        zipped.begin(), zipped.end(), [](auto const& t) { return std::get<0>(t) % 2 == 0; });
-      REQUIRE(result == false);
+      bool result = std::ranges::is_partitioned(zipped, is_even_first);
+
+      THEN("the result is false") { REQUIRE(result == false); }
     }
   }
 }
@@ -804,18 +855,15 @@ SCENARIO("std::is_sorted_until works on zip_view", "[algorithms][sorted]")
 
     WHEN("we find where the sequence stops being sorted")
     {
+      auto cmp_by_first = [](auto const& a, auto const& b)
+      { return std::get<0>(a) < std::get<0>(b); };
       auto zipped = gst::ranges::views::zip(v1, v2, v3);
-      auto it     = std::is_sorted_until(zipped.begin(),
-                                     zipped.end(),
-                                     [](auto const& a, auto const& b)
-                                     { return std::get<0>(a) < std::get<0>(b); });
+      auto it     = std::ranges::is_sorted_until(zipped, cmp_by_first);
 
       THEN("we find the first unsorted element")
       {
-        REQUIRE(std::distance(zipped.begin(), it) == 3);
-        REQUIRE(std::get<0>(*it) == 2);
-        REQUIRE(std::get<1>(*it) == Catch::Approx(2.2));
-        REQUIRE(std::get<2>(*it) == 'd');
+        REQUIRE(it == std::ranges::next(zipped.begin(), 3));
+        REQUIRE((*it == std::make_tuple(2, Catch::Approx(2.2), 'd')));
       }
     }
   }
@@ -826,41 +874,34 @@ SCENARIO("std::lower_bound and std::upper_bound work on sorted zip_view",
 {
   GIVEN("Sorted vectors")
   {
+    auto cmp_by_first = [](auto const& a, auto const& b)
+    { return std::get<0>(a) < std::get<0>(b); };
+
     std::vector<int>    v1{1, 2, 2, 3, 4, 4, 4, 5};
     std::vector<double> v2{1.1, 2.1, 2.2, 3.3, 4.1, 4.2, 4.3, 5.5};
     std::vector<char>   v3{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
-
-    auto zipped = gst::ranges::views::zip(v1, v2, v3);
+    auto                zipped  = gst::ranges::views::zip(v1, v2, v3);
+    auto                to_find = std::make_tuple(4, 0.0, '\0');
 
     WHEN("we find lower_bound for value 4")
     {
-      auto it = std::lower_bound(zipped.begin(),
-                                 zipped.end(),
-                                 std::make_tuple(4, 0.0, '\0'),
-                                 [](auto const& a, auto const& b)
-                                 { return std::get<0>(a) < std::get<0>(b); });
+      auto it = std::ranges::lower_bound(zipped, to_find, cmp_by_first);
 
       THEN("we get the first element not less than 4")
       {
-        REQUIRE(std::get<0>(*it) == 4);
-        REQUIRE(std::get<1>(*it) == Catch::Approx(4.1));
-        REQUIRE(std::get<2>(*it) == 'e');
+        REQUIRE(it != zipped.end());
+        REQUIRE((*it == std::make_tuple(4, Catch::Approx(4.1), 'e')));
       }
     }
 
     WHEN("we find upper_bound for value 4")
     {
-      auto it = std::upper_bound(zipped.begin(),
-                                 zipped.end(),
-                                 std::make_tuple(4, 0.0, '\0'),
-                                 [](auto const& a, auto const& b)
-                                 { return std::get<0>(a) < std::get<0>(b); });
+      auto it = std::ranges::upper_bound(zipped, to_find, cmp_by_first);
 
       THEN("we get the first element greater than 4")
       {
-        REQUIRE(std::get<0>(*it) == 5);
-        REQUIRE(std::get<1>(*it) == Catch::Approx(5.5));
-        REQUIRE(std::get<2>(*it) == 'h');
+        REQUIRE(it != zipped.end());
+        REQUIRE((*it == std::make_tuple(5, Catch::Approx(5.5), 'h')));
       }
     }
   }
@@ -870,6 +911,9 @@ SCENARIO("std::max_element works on zip_view", "[algorithms][minmax]")
 {
   GIVEN("Three vectors")
   {
+    auto cmp_by_first = [](auto const& a, auto const& b)
+    { return std::get<0>(a) < std::get<0>(b); };
+
     std::vector<int>    v1{3, 1, 4, 1, 5, 9, 2};
     std::vector<double> v2{3.3, 1.1, 4.4, 1.2, 5.5, 9.9, 2.2};
     std::vector<char>   v3{'c', 'a', 'd', 'b', 'e', 'i', 'f'};
@@ -878,17 +922,12 @@ SCENARIO("std::max_element works on zip_view", "[algorithms][minmax]")
 
     WHEN("we find the maximum element by first component")
     {
-      auto it = std::max_element(zipped.begin(),
-                                 zipped.end(),
-                                 [](auto const& a, auto const& b)
-                                 { return std::get<0>(a) < std::get<0>(b); });
+      auto it = std::ranges::max_element(zipped, cmp_by_first);
 
       THEN("we get the tuple with maximum first element")
       {
         REQUIRE(it != zipped.end());
-        REQUIRE(std::get<0>(*it) == 9);
-        REQUIRE(std::get<1>(*it) == Catch::Approx(9.9));
-        REQUIRE(std::get<2>(*it) == 'i');
+        REQUIRE((*it == std::make_tuple(9, Catch::Approx(9.9), 'i')));
       }
     }
   }
@@ -906,17 +945,14 @@ SCENARIO("std::min_element works on zip_view", "[algorithms][minmax]")
 
     WHEN("we find the minimum element by first component")
     {
-      auto it = std::min_element(zipped.begin(),
-                                 zipped.end(),
-                                 [](auto const& a, auto const& b)
-                                 { return std::get<0>(a) < std::get<0>(b); });
+      auto cmp_by_first = [](auto const& a, auto const& b)
+      { return std::get<0>(a) < std::get<0>(b); };
+      auto it = std::ranges::min_element(zipped, cmp_by_first);
 
       THEN("we get the tuple with minimum first element")
       {
         REQUIRE(it != zipped.end());
-        REQUIRE(std::get<0>(*it) == 1);
-        REQUIRE(std::get<1>(*it) == Catch::Approx(1.1));
-        REQUIRE(std::get<2>(*it) == 'a');
+        REQUIRE((*it == std::make_tuple(1, Catch::Approx(1.1), 'a')));
       }
     }
   }
@@ -932,21 +968,17 @@ SCENARIO("std::minmax_element works on zip_view", "[algorithms][minmax]")
 
     WHEN("we find both min and max elements")
     {
-      auto zipped = gst::ranges::views::zip(v1, v2, v3);
-      auto result = std::minmax_element(zipped.begin(),
-                                        zipped.end(),
-                                        [](auto const& a, auto const& b)
-                                        { return std::get<0>(a) < std::get<0>(b); });
+      auto cmp_by_first = [](auto const& a, auto const& b)
+      { return std::get<0>(a) < std::get<0>(b); };
+      auto zipped          = gst::ranges::views::zip(v1, v2, v3);
+      auto [first, second] = std::ranges::minmax_element(zipped, cmp_by_first);
 
       THEN("we get both minimum and maximum")
       {
-        REQUIRE(std::get<0>(*result.first) == 1);
-        REQUIRE(std::get<1>(*result.first) == Catch::Approx(1.1));
-        REQUIRE(std::get<2>(*result.first) == 'a');
-
-        REQUIRE(std::get<0>(*result.second) == 9);
-        REQUIRE(std::get<1>(*result.second) == Catch::Approx(9.9));
-        REQUIRE(std::get<2>(*result.second) == 'i');
+        REQUIRE(first != zipped.end());
+        REQUIRE(second != zipped.end());
+        REQUIRE((*first == std::make_tuple(1, Catch::Approx(1.1), 'a')));
+        REQUIRE((*second == std::make_tuple(9, Catch::Approx(9.9), 'i')));
       }
     }
   }
@@ -957,41 +989,119 @@ SCENARIO("std::next_permutation and std::prev_permutation work on zip_view",
 {
   GIVEN("Three sorted vectors")
   {
-    std::vector<int>  v1{1, 2, 3};
-    std::vector<char> v2{'a', 'b', 'c'};
+    auto cmp_by_first = [](auto const& a, auto const& b)
+    { return std::get<0>(a) < std::get<0>(b); };
 
-    WHEN("we generate the next permutation")
+    WHEN("we generate permutations with next_permutation")
     {
-      auto zipped = gst::ranges::views::zip(v1, v2);
-      bool result = std::next_permutation(zipped.begin(),
-                                          zipped.end(),
-                                          [](auto const& a, auto const& b)
-                                          { return std::get<0>(a) < std::get<0>(b); });
+      std::vector<int>  v1{1, 2, 3};
+      std::vector<char> v2{'a', 'b', 'c'};
+      auto              zipped = gst::ranges::views::zip(v1, v2);
 
-      THEN("all vectors are permuted together")
+      THEN("the first permutation is generated correctly")
       {
-        REQUIRE(result == true);
+        auto result = std::ranges::next_permutation(zipped, cmp_by_first);
+        REQUIRE(result.found);
+        REQUIRE(result.in == zipped.end());
         REQUIRE(v1 == std::vector<int>{1, 3, 2});
         REQUIRE(v2 == std::vector<char>{'a', 'c', 'b'});
+
+        AND_THEN("the second permutation is generated correctly")
+        {
+          result = std::ranges::next_permutation(zipped, cmp_by_first);
+          REQUIRE(result.found);
+          REQUIRE(result.in == zipped.end());
+          REQUIRE(v1 == std::vector<int>{2, 1, 3});
+          REQUIRE(v2 == std::vector<char>{'b', 'a', 'c'});
+
+          AND_THEN("the third permutation is generated correctly")
+          {
+            result = std::ranges::next_permutation(zipped, cmp_by_first);
+            REQUIRE(result.found);
+            REQUIRE(result.in == zipped.end());
+            REQUIRE(v1 == std::vector<int>{2, 3, 1});
+            REQUIRE(v2 == std::vector<char>{'b', 'c', 'a'});
+
+            AND_THEN("the fourth permutation is generated correctly")
+            {
+              result = std::ranges::next_permutation(zipped, cmp_by_first);
+              REQUIRE(result.found);
+              REQUIRE(result.in == zipped.end());
+              REQUIRE(v1 == std::vector<int>{3, 1, 2});
+              REQUIRE(v2 == std::vector<char>{'c', 'a', 'b'});
+
+              AND_THEN("the last permutation is generated correctly")
+              {
+                result = std::ranges::next_permutation(zipped, cmp_by_first);
+                REQUIRE(result.found);
+                REQUIRE(result.in == zipped.end());
+                REQUIRE(v1 == std::vector<int>{3, 2, 1});
+                REQUIRE(v2 == std::vector<char>{'c', 'b', 'a'});
+
+                AND_THEN("we wrap around to the first permutation")
+                {
+                  result = std::ranges::next_permutation(zipped, cmp_by_first);
+                  REQUIRE_FALSE(result.found);
+                  REQUIRE(result.in == zipped.end());
+                  REQUIRE(v1 == std::vector<int>{1, 2, 3});
+                  REQUIRE(v2 == std::vector<char>{'a', 'b', 'c'});
+                }
+              }
+            }
+          }
+        }
       }
     }
 
-    WHEN("we generate the previous permutation from non-first permutation")
+    WHEN("we generate permutations with prev_permutation")
     {
-      v1 = {2, 1, 3};
-      v2 = {'b', 'a', 'c'};
+      std::vector<int>  v1     = {1, 2, 3};
+      std::vector<char> v2     = {'a', 'b', 'c'};
+      auto              zipped = gst::ranges::views::zip(v1, v2);
 
-      auto zipped = gst::ranges::views::zip(v1, v2);
-      bool result = std::prev_permutation(zipped.begin(),
-                                          zipped.end(),
-                                          [](auto const& a, auto const& b)
-                                          { return std::get<0>(a) < std::get<0>(b); });
-
-      THEN("all vectors are permuted together")
+      THEN("we wrap around to the last permutation")
       {
-        REQUIRE(result == true);
-        REQUIRE(v1 == std::vector<int>{1, 3, 2});
-        REQUIRE(v2 == std::vector<char>{'a', 'c', 'b'});
+        auto result = std::ranges::prev_permutation(zipped, cmp_by_first);
+        REQUIRE_FALSE(result.found);
+        REQUIRE(result.in == zipped.end());
+        REQUIRE(v1 == std::vector<int>{3, 2, 1});
+        REQUIRE(v2 == std::vector<char>{'c', 'b', 'a'});
+
+        AND_THEN("the second previous permutation is generated correctly")
+        {
+          result = std::ranges::prev_permutation(zipped, cmp_by_first);
+          REQUIRE(result.found);
+          REQUIRE(result.in == zipped.end());
+          REQUIRE(v1 == std::vector<int>{3, 1, 2});
+          REQUIRE(v2 == std::vector<char>{'c', 'a', 'b'});
+
+          AND_THEN("the third previous permutation is generated correctly")
+          {
+            result = std::ranges::prev_permutation(zipped, cmp_by_first);
+            REQUIRE(result.found);
+            REQUIRE(result.in == zipped.end());
+            REQUIRE(v1 == std::vector<int>{2, 3, 1});
+            REQUIRE(v2 == std::vector<char>{'b', 'c', 'a'});
+
+            AND_THEN("the fourth previous permutation is generated correctly")
+            {
+              result = std::ranges::prev_permutation(zipped, cmp_by_first);
+              REQUIRE(result.found);
+              REQUIRE(result.in == zipped.end());
+              REQUIRE(v1 == std::vector<int>{2, 1, 3});
+              REQUIRE(v2 == std::vector<char>{'b', 'a', 'c'});
+
+              AND_THEN("the last previous permutation is generated correctly")
+              {
+                result = std::ranges::prev_permutation(zipped, cmp_by_first);
+                REQUIRE(result.found);
+                REQUIRE(result.in == zipped.end());
+                REQUIRE(v1 == std::vector<int>{1, 3, 2});
+                REQUIRE(v2 == std::vector<char>{'a', 'c', 'b'});
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -1006,18 +1116,13 @@ SCENARIO("std::nth_element works on random access zip_view", "[algorithms][nth_e
 
     WHEN("we find the 3rd smallest element")
     {
+      auto cmp_by_first = [](auto const& a, auto const& b)
+      { return std::get<0>(a) < std::get<0>(b); };
       auto zipped = gst::ranges::views::zip(keys, values);
-      std::nth_element(zipped.begin(),
-                       zipped.begin() + 3,
-                       zipped.end(),
-                       [](auto const& a, auto const& b)
-                       { return std::get<0>(a) < std::get<0>(b); });
+      std::nth_element(zipped.begin(), zipped.begin() + 3, zipped.end(), cmp_by_first);
 
       THEN("the element at position 3 has key 5 (4th smallest)")
       {
-        // After nth_element, position 3 should have the element that would be there if sorted
-        // Sorted keys would be: 1, 2, 3, 5, 7, 8, 9
-        // So position 3 (0-indexed) should have key 5
         REQUIRE(keys[3] == 5);
         REQUIRE(values[3] == '5');
       }
@@ -1035,12 +1140,15 @@ SCENARIO("std::partial_sort works on random access zip_view", "[algorithms][sort
 
     WHEN("we partially sort the first 3 elements")
     {
+      auto cmp_by_first = [](auto const& a, auto const& b)
+      { return std::get<0>(a) < std::get<0>(b); };
       auto zipped = gst::ranges::views::zip(v1, v2, v3);
-      std::partial_sort(zipped.begin(),
-                        zipped.begin() + 3,
-                        zipped.end(),
-                        [](auto const& a, auto const& b)
-                        { return std::get<0>(a) < std::get<0>(b); });
+      auto end    = std::ranges::partial_sort(zipped, std::next(zipped.begin(), 3), cmp_by_first);
+
+      THEN("the returned iterator points to the end of the sorted range")
+      {
+        REQUIRE(end == zipped.end());
+      }
 
       THEN("the first 3 elements are the smallest, in sorted order")
       {
@@ -1059,13 +1167,15 @@ SCENARIO("std::partition works on zip_view", "[algorithms][partition]")
   {
     std::vector<int>         v1{1, 2, 3, 4, 5, 6};
     std::vector<std::string> v2{"one", "two", "three", "four", "five", "six"};
-    std::vector<char>        v3{'a', 'b', 'c', 'd', 'e', 'f'};
+    std::vector<short>       v3{'a', 'b', 'c', 'd', 'e', 'f'};
 
     WHEN("we partition by even numbers")
     {
-      auto is_even  = [](auto const& t) { return std::get<0>(t) % 2 == 0; };
-      auto zipped   = gst::ranges::views::zip(v1, v2, v3);
-      auto it_bound = std::partition(zipped.begin(), zipped.end(), is_even);
+      auto is_even         = [](auto const& t) { return std::get<0>(t) % 2 == 0; };
+      auto zipped          = gst::ranges::views::zip(v1, v2, v3);
+      auto [it_bound, end] = std::ranges::partition(zipped, is_even);
+
+      THEN("the end iterator remains unchanged") { REQUIRE(end == zipped.end()); }
 
       THEN("the return value points to the partition boundary")
       {
@@ -1074,10 +1184,10 @@ SCENARIO("std::partition works on zip_view", "[algorithms][partition]")
 
       THEN("even elements come first in the first container")
       {
-        REQUIRE(std::all_of(
-          v1.begin(), std::next(v1.begin(), 3), [](auto const arg) { return arg % 2 == 0; }));
-        REQUIRE(std::all_of(
-          std::next(v1.begin(), 3), v1.end(), [](auto const arg) { return arg % 2 != 0; }));
+        auto is_even_val = [](auto const arg) { return arg % 2 == 0; };
+        auto is_odd_val  = [](auto const arg) { return arg % 2 != 0; };
+        REQUIRE(std::ranges::all_of(v1.begin(), std::next(v1.begin(), 3), is_even_val));
+        REQUIRE(std::ranges::all_of(std::next(v1.begin(), 3), v1.end(), is_odd_val));
       }
     }
   }
@@ -1092,21 +1202,20 @@ SCENARIO("std::partition_point works on partitioned zip_view", "[algorithms][par
 
     WHEN("we find the partition point")
     {
-      auto zipped = gst::ranges::views::zip(v1, v2);
-      auto it     = std::partition_point(
-        zipped.begin(), zipped.end(), [](auto const& t) { return std::get<0>(t) % 2 == 0; });
+      auto zipped        = gst::ranges::views::zip(v1, v2);
+      auto is_even_first = [](auto const& t) { return std::get<0>(t) % 2 == 0; };
+      auto it            = std::ranges::partition_point(zipped, is_even_first);
 
       THEN("we find the boundary between partitions")
       {
-        REQUIRE(std::distance(zipped.begin(), it) == 3);
-        REQUIRE(std::get<0>(*it) == 1);
-        REQUIRE(std::get<1>(*it) == Catch::Approx(1.1));
+        REQUIRE(it == std::next(zipped.begin(), 3));
+        REQUIRE((*it == std::make_tuple(1, Catch::Approx(1.1))));
       }
     }
   }
 }
 
-SCENARIO("std::sort works on random access zip_view", "[algorithms]")
+SCENARIO("sort works on random access zip_view", "[algorithms]")
 {
   GIVEN("Two vectors where first should be sorted and second follows")
   {
@@ -1115,10 +1224,9 @@ SCENARIO("std::sort works on random access zip_view", "[algorithms]")
 
     WHEN("we sort the zip_view by the key")
     {
-      auto zipped = gst::ranges::views::zip(keys, values);
-      std::sort(zipped.begin(),
-                zipped.end(),
-                [](auto const& a, auto const& b) { return std::get<0>(a) < std::get<0>(b); });
+      auto zipped     = gst::ranges::views::zip(keys, values);
+      auto proj_first = [](auto const& t) { return std::get<0>(t); };
+      std::ranges::sort(zipped, std::less<>(), proj_first);
 
       THEN("both containers are sorted according to the keys")
       {
@@ -1136,10 +1244,9 @@ SCENARIO("std::sort works on random access zip_view", "[algorithms]")
 
     WHEN("we sort by key")
     {
-      auto zipped = gst::ranges::views::zip(keys, names, pairs);
-      std::sort(zipped.begin(),
-                zipped.end(),
-                [](auto const& a, auto const& b) { return std::get<0>(a) < std::get<0>(b); });
+      auto zipped     = gst::ranges::views::zip(keys, names, pairs);
+      auto proj_first = [](auto const& t) { return std::get<0>(t); };
+      std::ranges::sort(zipped, std::less<>(), proj_first);
 
       THEN("all three containers are sorted consistently")
       {
@@ -1162,13 +1269,14 @@ SCENARIO("std::stable_partition works on zip_view", "[algorithms][partition]")
 
     WHEN("we stable partition by even numbers")
     {
-      auto zipped = gst::ranges::views::zip(v1, v2, v3);
-      auto it     = std::stable_partition(
-        zipped.begin(), zipped.end(), [](auto const& t) { return std::get<0>(t) % 2 == 0; });
+      auto zipped        = gst::ranges::views::zip(v1, v2, v3);
+      auto is_even_first = [](auto const& t) { return std::get<0>(t) % 2 == 0; };
+      auto [pivot, end]  = std::ranges::stable_partition(zipped, is_even_first);
 
       THEN("the return value points to the partition boundary")
       {
-        REQUIRE(it == std::next(zipped.begin(), 3));
+        REQUIRE(pivot != zipped.end());
+        REQUIRE(pivot == std::next(zipped.begin(), 3));
       }
 
       THEN("even elements come first, order preserved, all vectors partitioned")
@@ -1191,11 +1299,9 @@ SCENARIO("std::stable_sort works on random access zip_view", "[algorithms][sort]
 
     WHEN("we stable sort by the first element")
     {
-      auto zipped = gst::ranges::views::zip(v1, v2, v3);
-      std::stable_sort(zipped.begin(),
-                       zipped.end(),
-                       [](auto const& a, auto const& b)
-                       { return std::get<0>(a) < std::get<0>(b); });
+      auto zipped     = gst::ranges::views::zip(v1, v2, v3);
+      auto proj_first = [](auto const& t) { return std::get<0>(t); };
+      std::ranges::stable_sort(zipped, std::less<>(), proj_first);
 
       THEN("equal elements maintain their relative order")
       {
@@ -1217,23 +1323,24 @@ SCENARIO("std::unique works on sorted zip_view", "[algorithms][unique]")
 
     WHEN("we remove consecutive duplicates based on first element")
     {
-      auto zipped = gst::ranges::views::zip(v1, v2, v3);
-      auto it =
-        std::unique(zipped.begin(),
-                    zipped.end(),
-                    [](auto const& a, auto const& b) { return std::get<0>(a) == std::get<0>(b); });
+      auto eq_by_first = [](auto const& a, auto const& b)
+      { return std::get<0>(a) == std::get<0>(b); };
+      auto zipped           = gst::ranges::views::zip(v1, v2, v3);
+      auto [new_last, last] = std::ranges::unique(zipped, eq_by_first);
 
-      THEN("duplicates are removed from all vectors")
+      THEN("the returned iterator points to the new end of the range")
       {
-        auto new_size = std::distance(zipped.begin(), it);
-        REQUIRE(new_size == 4);
-        v1.erase(v1.begin() + new_size, v1.end());
-        v2.erase(v2.begin() + new_size, v2.end());
-        v3.erase(v3.begin() + new_size, v3.end());
+        REQUIRE(new_last == std::next(zipped.begin(), 4));
+        REQUIRE(last == zipped.end());
+      }
 
-        REQUIRE(v1 == std::vector<int>{1, 2, 3, 4});
-        REQUIRE(v2 == std::vector<std::string>{"a", "c", "e", "g"});
-        REQUIRE(v3 == std::vector<double>{1.1, 2.1, 3.1, 4.1});
+      THEN("consecutive duplicates are removed")
+      {
+        REQUIRE(std::vector<int>(v1.begin(), v1.begin() + 4) == std::vector<int>{1, 2, 3, 4});
+        REQUIRE(std::vector<std::string>(v2.begin(), v2.begin() + 4) ==
+                std::vector<std::string>{"a", "c", "e", "g"});
+        REQUIRE(std::vector<double>(v3.begin(), v3.begin() + 4) ==
+                std::vector<double>{1.1, 2.1, 3.1, 4.1});
       }
     }
   }
