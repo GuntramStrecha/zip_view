@@ -12,10 +12,8 @@
 
 #include <algorithm>
 #include <array>
-#include <functional>
 #include <list>
 #include <numeric>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -1106,7 +1104,7 @@ SCENARIO("std::partition_point works on partitioned zip_view", "[algorithms][par
   }
 }
 
-SCENARIO("std::sort works on random access zip_view", "[algorithms]")
+SCENARIO("sort works on random access zip_view", "[algorithms]")
 {
   GIVEN("Two vectors where first should be sorted and second follows")
   {
@@ -1116,9 +1114,7 @@ SCENARIO("std::sort works on random access zip_view", "[algorithms]")
     WHEN("we sort the zip_view by the key")
     {
       auto zipped = gst::ranges::views::zip(keys, values);
-      std::sort(zipped.begin(),
-                zipped.end(),
-                [](auto const& a, auto const& b) { return std::get<0>(a) < std::get<0>(b); });
+      std::ranges::sort(zipped, std::less<>(), [](auto const& t) { return std::get<0>(t); });
 
       THEN("both containers are sorted according to the keys")
       {
@@ -1137,9 +1133,7 @@ SCENARIO("std::sort works on random access zip_view", "[algorithms]")
     WHEN("we sort by key")
     {
       auto zipped = gst::ranges::views::zip(keys, names, pairs);
-      std::sort(zipped.begin(),
-                zipped.end(),
-                [](auto const& a, auto const& b) { return std::get<0>(a) < std::get<0>(b); });
+      std::ranges::sort(zipped, std::less<>(), [](auto const& t) { return std::get<0>(t); });
 
       THEN("all three containers are sorted consistently")
       {
@@ -1192,10 +1186,7 @@ SCENARIO("std::stable_sort works on random access zip_view", "[algorithms][sort]
     WHEN("we stable sort by the first element")
     {
       auto zipped = gst::ranges::views::zip(v1, v2, v3);
-      std::stable_sort(zipped.begin(),
-                       zipped.end(),
-                       [](auto const& a, auto const& b)
-                       { return std::get<0>(a) < std::get<0>(b); });
+      std::ranges::stable_sort(zipped, std::less<>(), [](auto const& t) { return std::get<0>(t); });
 
       THEN("equal elements maintain their relative order")
       {
