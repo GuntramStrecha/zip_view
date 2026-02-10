@@ -1,0 +1,166 @@
+name: Architecture
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+    types: [ opened, synchronize, reopened ]
+  workflow_dispatch:  # Allow manual triggering
+
+env:
+  VERBOSE: 1
+
+jobs:
+  cpp11-compatibility:
+    name: C++11 Strict Compile
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check C++11 compatibility (strict compile)
+      run: |
+        echo "Checking C++11 compatibility with strict flags..."
+        g++ -std=c++11 -pedantic -Werror -Wall -Wextra -Wconversion \
+          -I include/ -c include/zip_view.hpp -o /tmp/zip_view.o
+        echo "✓ C++11 compatibility verified"
+
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Header-only verification
+      run: |
+        echo "Verifying header-only constraint..."
+        if find include/ -name "*.cpp" | grep -q .; then
+          echo "ERROR: .cpp files found in include/ directory"
+          exit 1
+        fi
+        echo "✓ No .cpp files in include/"
+
+    - name: Check for C++14+ features
+      run: |
+        echo "Checking for C++14+ features in production code..."
+        BAD_FEATURES=$(grep -rn --include="*.hpp" -E \
+          "std::(make_unique|make_index_sequence|enable_if_t|decay_t|remove_reference_t|string_view)" \
+          include/ || true)
+        if [ ! -z "$BAD_FEATURES" ]; then
+          echo "ERROR: C++14+ features found in include/:"
+          echo "$BAD_FEATURES"
+          exit 1
+        fi
+        echo "✓ No C++14+ features detected"
+
+    - name: Check for virtual functions
+      run: |
+        echo "Checking for virtual functions (zero-cost abstraction)..."
+        VIRTUAL=$(grep -rn --include="*.hpp" -E "virtual[[:space:]]+" include/ | grep -v "//" || true)
+        if [ ! -z "$VIRTUAL" ]; then
+          echo "ERROR: virtual functions found in include/:"
+          echo "$VIRTUAL"
+          exit 1
+        fi
+        echo "✓ No virtual functions (zero-cost abstraction maintained)"
+
+    - name: Check namespace structure
+      run: |
+        echo "Checking namespace structure..."
+        if ! grep -q "namespace gst" include/zip_view.hpp; then
+          echo "ERROR: Missing gst namespace"
+          exit 1
+        fi
+        if ! grep -q "namespace detail" include/zip_view.hpp; then
+          echo "ERROR: Missing detail namespace"
+          exit 1
+        fi
+        if ! grep -q "namespace ranges" include/zip_view.hpp; then
+          echo "ERROR: Missing ranges namespace"
+          exit 1
+        fi
+        echo "✓ Namespace structure verified"
+
+  script-validation:
+    name: Architecture Script
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run architecture validation script
+      run: |
+        chmod +x scripts/check_architecture.sh
+        ./scripts/check_architecture.sh
+
+  architecture-tests:
+    name: Architecture Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_CXX_COMPILER=g++ \
+          -DCMAKE_BUILD_TYPE=Release \
+          -S .
+
+    - name: Build tests
+      run: cmake --build build --target ZipViewTests
+
+    - name: Run architecture tests
+      run: ./build/tests/ZipViewTests "[architecture]"
+
+  clang-tidy-checks:
+    name: Clang-Tidy Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install clang-tidy
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-tidy
+
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_CXX_COMPILER=g++ \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+          -S .
+
+    - name: Run clang-tidy architecture checks
+      run: |
+        chmod +x scripts/run_clang_tidy.sh
+        ./scripts/run_clang_tidy.sh 2>&1 | tee clang-tidy-output.txt
+        # Check for architecture-critical warnings
+        if grep -E "(cppcoreguidelines-owning-memory|performance-)" clang-tidy-output.txt | grep -v "Suppressed"; then
+          echo "WARNING: Found architecture-relevant clang-tidy warnings"
+          # Don't fail the build for warnings, but show them
+        fi
+
+  summary:
+    name: Architecture Summary
+    runs-on: ubuntu-latest
+    needs: [cpp11-compatibility, static-analysis, script-validation, architecture-tests, clang-tidy-checks]
+    if: success()
+
+    steps:
+    - name: Summary
+      run: |
+        echo "============================================"
+        echo "✓ All architecture checks passed"
+        echo "============================================"
+        echo "- C++11 compatibility verified"
+        echo "- Header-only constraint verified"
+        echo "- Zero-cost abstraction maintained"
+        echo "- Namespace structure correct"
+        echo "- Architecture tests passed"
+        echo "- Clang-tidy checks completed"
+        echo "============================================"
