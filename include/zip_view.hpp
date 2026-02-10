@@ -98,14 +98,14 @@ private:
   Container* container_;
 
 public:
-  ref_view() : container_(nullptr) {}
-  explicit ref_view(Container& c) : container_(&c) {}
+  ref_view() noexcept : container_(nullptr) {}
+  explicit ref_view(Container& c) noexcept : container_(&c) {}
 
   ref_view(ref_view const&)     = default;
   ref_view(ref_view&&) noexcept = default;
 
   // Assignment rebinds the reference (matches std::ranges::ref_view)
-  ref_view& operator=(ref_view const& other)
+  ref_view& operator=(ref_view const& other) noexcept
   {
     container_ = other.container_;
     return *this;
@@ -116,8 +116,8 @@ public:
     return *this;
   }
 
-  Container&       get() { return *container_; }
-  Container const& get() const { return *container_; }
+  Container&       get() noexcept { return *container_; }
+  Container const& get() const noexcept { return *container_; }
 
   auto begin() -> decltype(std::begin(*container_)) { return std::begin(*container_); }
   auto end() -> decltype(std::end(*container_)) { return std::end(*container_); }
@@ -132,26 +132,35 @@ private:
   Container container_;
 
 public:
-  owning_view() : container_() {}
-  explicit owning_view(Container&& c) : container_(std::move(c)) {}
+  owning_view() noexcept(std::is_nothrow_default_constructible<Container>::value) : container_() {}
+  explicit owning_view(Container&& c) noexcept(std::is_nothrow_move_constructible<Container>::value)
+    : container_(std::move(c))
+  {}
 
-  owning_view(owning_view const& other) : container_(other.container_) {}
-  owning_view(owning_view&& other) noexcept : container_(std::move(other.container_)) {}
+  owning_view(owning_view const& other) noexcept(
+    std::is_nothrow_copy_constructible<Container>::value)
+    : container_(other.container_)
+  {}
+  owning_view(owning_view&& other) noexcept(std::is_nothrow_move_constructible<Container>::value)
+    : container_(std::move(other.container_))
+  {}
 
   // Assignment replaces the owned container
-  owning_view& operator=(owning_view const& other)
+  owning_view& operator=(owning_view const& other) noexcept(
+    std::is_nothrow_copy_assignable<Container>::value)
   {
     container_ = other.container_;
     return *this;
   }
-  owning_view& operator=(owning_view&& other) noexcept
+  owning_view& operator=(owning_view&& other) noexcept(
+    std::is_nothrow_move_assignable<Container>::value)
   {
     container_ = std::move(other.container_);
     return *this;
   }
 
-  Container&       get() { return container_; }
-  Container const& get() const { return container_; }
+  Container&       get() noexcept { return container_; }
+  Container const& get() const noexcept { return container_; }
 
   auto begin() -> decltype(std::begin(container_)) { return std::begin(container_); }
   auto end() -> decltype(std::end(container_)) { return std::end(container_); }
@@ -323,8 +332,12 @@ public:
     using reference =
       decltype(reference_for(detail::make_index_sequence<std::tuple_size<IterTuple>::value>{}));
 
-    basic_iterator() = default;
-    explicit basic_iterator(IterTuple iters) : iters_(std::move(iters)) {}
+    basic_iterator() noexcept(std::is_nothrow_default_constructible<IterTuple>::value) = default;
+
+    explicit basic_iterator(IterTuple iters) noexcept(
+      std::is_nothrow_move_constructible<IterTuple>::value)
+      : iters_(std::move(iters))
+    {}
 
     auto operator++() -> basic_iterator&
     {
@@ -339,8 +352,14 @@ public:
       return tmp;
     }
 
-    auto operator*() -> reference { return dereference(INDICES); }
-    auto operator*() const -> reference { return dereference(INDICES); }
+    auto operator*() noexcept(noexcept(dereference(INDICES))) -> reference
+    {
+      return dereference(INDICES);
+    }
+    auto operator*() const noexcept(noexcept(dereference(INDICES))) -> reference
+    {
+      return dereference(INDICES);
+    }
 
     auto operator==(basic_iterator const& other) const noexcept -> bool
     {
@@ -442,7 +461,7 @@ public:
     }
 
     // Custom iter_swap for proper swapping of zipped elements
-    friend auto iter_swap(basic_iterator const& lhs, basic_iterator const& rhs) -> void
+    friend auto iter_swap(basic_iterator const& lhs, basic_iterator const& rhs) noexcept -> void
     {
       iter_swap_impl(lhs, rhs, INDICES);
     }
@@ -451,11 +470,10 @@ public:
     template <std::size_t... Is>
     static auto iter_swap_impl(basic_iterator const& lhs,
                                basic_iterator const& rhs,
-                               detail::index_sequence<Is...>) -> void
+                               detail::index_sequence<Is...>) noexcept -> void
     {
-      using std::swap;
       static_cast<void>(std::initializer_list<int>{
-        (swap(*std::get<Is>(lhs.iters_), *std::get<Is>(rhs.iters_)), 0)...});
+        (std::swap(*std::get<Is>(lhs.iters_), *std::get<Is>(rhs.iters_)), 0)...});
     }
   };
 
@@ -464,20 +482,27 @@ public:
 
   template <typename... Cs,
             typename std::enable_if<sizeof...(Cs) == sizeof...(Containers), int>::type = 0>
-  explicit zip_view(Cs&&... containers)
+  explicit zip_view(Cs&&... containers) noexcept(
+    std::is_nothrow_constructible<storage_tuple, detail::view_t<Cs>...>::value)
     : views_(detail::view_t<Cs>(std::forward<Cs>(containers))...)
   {}
 
-  zip_view(zip_view const& other) : views_(other.views_) {}
-  zip_view(zip_view&& other) noexcept : views_(std::move(other.views_)) {}
+  zip_view(zip_view const& other) noexcept(std::is_nothrow_copy_constructible<storage_tuple>::value)
+    : views_(other.views_)
+  {}
+  zip_view(zip_view&& other) noexcept(std::is_nothrow_move_constructible<storage_tuple>::value)
+    : views_(std::move(other.views_))
+  {}
   ~zip_view() = default;
 
-  zip_view& operator=(zip_view const& other)
+  zip_view& operator=(zip_view const& other) noexcept(
+    std::is_nothrow_copy_assignable<storage_tuple>::value)
   {
     views_ = other.views_;
     return *this;
   }
-  zip_view& operator=(zip_view&& other) noexcept
+  zip_view& operator=(zip_view&& other) noexcept(
+    std::is_nothrow_move_assignable<storage_tuple>::value)
   {
     views_ = std::move(other.views_);
     return *this;
@@ -515,7 +540,8 @@ public:
 namespace views
 {
 template <typename... Containers>
-auto zip(Containers&&... containers) -> zip_view<Containers&&...>
+auto zip(Containers&&... containers) noexcept(noexcept(
+  zip_view<Containers&&...>(std::forward<Containers>(containers)...))) -> zip_view<Containers&&...>
 {
   return zip_view<Containers&&...>(std::forward<Containers>(containers)...);
 }
