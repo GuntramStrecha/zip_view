@@ -1,5 +1,46 @@
 ---
-Checks:          'cppcoreguidline-*,modernize-*,misc-*'
-WarningsAsErrors: 'true'
-FormatStyle:     file
+Checks: >
+  cppcoreguidelines-*,
+  modernize-*,
+  performance-*,
+  readability-*,
+  bugprone-*,
+  misc-*,
+  -clang-diagnostic-unknown-warning-option,
+  -modernize-use-trailing-return-type,
+  -modernize-use-auto,
+  -modernize-type-traits,
+  -modernize-use-nodiscard,
+  -modernize-use-constraints,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-special-member-functions,
+  -cppcoreguidelines-avoid-do-while,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  -readability-named-parameter,
+  -readability-redundant-access-specifiers,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -bugprone-unhandled-self-assignment,
+  -misc-include-cleaner
+
+WarningsAsErrors: ''
+FormatStyle: file
+
+CheckOptions:
+  # No heap allocation
+  - key: cppcoreguidelines-owning-memory.LegacyResourceProducers
+    value: 'malloc;new'
+
+  # Performance
+  - key: performance-move-const-arg.CheckTriviallyCopyableMove
+    value: true
+
+  # Readability
+  - key: readability-identifier-naming.ClassCase
+    value: lower_case
+  - key: readability-identifier-naming.StructCase
+    value: lower_case
+  - key: readability-identifier-naming.FunctionCase
+    value: lower_case
 ...
