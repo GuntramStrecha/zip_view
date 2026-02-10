@@ -190,8 +190,6 @@ template <typename... Containers>
 class zip_view
 {
 private:
-  static constexpr auto INDICES = detail::make_index_sequence<sizeof...(Containers)>{};
-
   using storage_tuple = std::tuple<detail::view_t<Containers>...>;
 
   template <typename T>
@@ -262,6 +260,8 @@ private:
   }
 
 public:
+  static constexpr auto INDICES = detail::make_index_sequence<sizeof...(Containers)>{};
+
   template <typename IterTuple>
   class basic_iterator
   {
