@@ -23,7 +23,8 @@
 //
 // For more information, please refer to <https://unlicense.org>
 
-#pragma once
+#ifndef GST_ZIP_VIEW_HPP
+#define GST_ZIP_VIEW_HPP
 
 #include <algorithm>
 #include <cstddef>
@@ -549,3 +550,5 @@ auto zip(Containers&&... containers) noexcept(noexcept(
 } // namespace views
 } // namespace ranges
 } // namespace gst
+
+#endif // GST_ZIP_VIEW_HPP
