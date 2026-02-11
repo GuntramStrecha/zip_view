@@ -29,17 +29,14 @@ success() {
 echo "=== zip_view Architecture Validation ==="
 echo ""
 
-# Rule 1: C++11 compatibility (no C++14+ features in include/)
-echo "Checking C++11 compatibility..."
+# Rule 1: C++11 compatibility
+# C++11 enforcement is handled tightly by CI (see "cpp11-compatibility" job which compiles with -std=c++11).
+# Keep a lightweight grep for obvious C++14+ standard-library features as a quick local hint.
+echo "Checking C++11 compatibility (quick scan)..."
 if grep -rn --include="*.hpp" -E "std::(make_unique|make_shared|make_index_sequence)" include/ 2>/dev/null; then
-  error "C++14+ standard library features found in include/"
-elif grep -rn --include="*.hpp" -E "if[[:space:]]+constexpr" include/ 2>/dev/null; then
-  error "C++17 'if constexpr' found in include/"
-elif grep -rn --include="*.hpp" -E "auto[[:space:]]+[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\([^)]*\)[[:space:]]*\{" include/ 2>/dev/null | grep -v -- "->"; then
-  # auto function() { // C++14 auto return type deduction
-  warning "Possible C++14 auto return type (should use trailing return type)"
+  warning "Possible C++14+ standard library features found in include/ (CI enforces strict compile)"
 else
-  success "C++11 compatibility verified"
+  success "C++11 quick-scan passed"
 fi
 
 # Rule 2: Header-only (no .cpp files in include/)
@@ -50,30 +47,97 @@ else
   success "Header-only constraint verified"
 fi
 
-# Rule 3: No virtual functions (zero-cost abstraction principle)
-echo "Checking for virtual functions..."
-if grep -rn --include="*.hpp" -E "virtual[[:space:]]+" include/ 2>/dev/null | grep -v "//"; then
-  error "virtual functions found in include/"
+# Run clang-tidy (replaces heuristic textual checks)
+echo "Running clang-tidy checks..."
+TMP_CLANG_OUT=$(mktemp)
+if ./scripts/run_clang_tidy.sh -header-filter=".*" 2>&1 | tee "$TMP_CLANG_OUT"; then
+  success "clang-tidy checks passed"
 else
-  success "No virtual functions (zero-cost abstraction maintained)"
+  error "clang-tidy reported issues (see $TMP_CLANG_OUT)"
+  # keep the detailed output visible
+  cat "$TMP_CLANG_OUT" >&2 || true
+fi
+rm -f "$TMP_CLANG_OUT"
+
+# Determine which heuristics clang-tidy can handle by inspecting available checks
+echo "Detecting clang-tidy support for architecture heuristics..."
+# Try to load our custom plugin if available so its checks appear in the list
+PLUGIN_DIR="${PWD}/build/clang_tidy_plugins"
+PLUGIN_ARG=""
+if [ -d "$PLUGIN_DIR" ]; then
+  for f in "$PLUGIN_DIR"/zipview_tidy.*; do
+    if [ -f "$f" ]; then
+      echo "Using clang-tidy plugin: $f"
+      PLUGIN_ARG="-load=$f"
+      break
+    fi
+  done
 fi
 
-# Rule 4: No dynamic allocation in view/iterator classes
-echo "Checking for heap allocation..."
-ALLOC_CHECK=$(grep -rn --include="*.hpp" -E "(new|delete|malloc|free)[[:space:]]+[^/]" include/ 2>/dev/null | grep -v "//" || true)
-if [ ! -z "$ALLOC_CHECK" ]; then
-  warning "Heap allocation keywords found (verify these are in comments only):"
-  echo "$ALLOC_CHECK"
+CLANG_CHECKS=$(clang-tidy $PLUGIN_ARG --list-checks 2>/dev/null || true)
+if [ -z "$CLANG_CHECKS" ]; then
+  warning "Could not list clang-tidy checks (clang-tidy may be missing). Fallback to script checks will be used."
+  MISSING_ALL=1
 else
-  success "No obvious heap allocation"
+  MISSING_ALL=0
 fi
 
-# Check for smart pointers (should not be in view/iterator storage)
-SMART_PTR=$(grep -rn --include="*.hpp" -E "std::(unique_ptr|shared_ptr)" include/ 2>/dev/null | grep -v "//" || true)
-if [ ! -z "$SMART_PTR" ]; then
-  warning "Smart pointers found (verify these don't violate zero-allocation):"
-  echo "$SMART_PTR"
+# Map heuristics -> keywords to search in clang-tidy check list
+declare -A HEUR_KEYWORDS
+HEUR_KEYWORDS[virtual]='virtual'
+HEUR_KEYWORDS[rtti]='dynamic|typeid|rtti'
+HEUR_KEYWORDS[heap]='owning-memory|malloc|new'
+HEUR_KEYWORDS[smartptr]='unique_ptr|shared_ptr|smart'
+HEUR_KEYWORDS[throw]='noexcept|throw|exception'
+
+MISSING_ARGS=()
+if [ $MISSING_ALL -eq 1 ]; then
+  # request all checks from fallback
+  MISSING_ARGS+=(--check-virtual --check-rtti --check-heap --check-smartptr --check-throw)
+else
+  for h in "virtual" "rtti" "heap" "smartptr" "throw"; do
+    kw=${HEUR_KEYWORDS[$h]}
+    if echo "$CLANG_CHECKS" | grep -Eiq "$kw"; then
+      echo "clang-tidy supports heuristic '$h' (matched: $kw)"
+    else
+      echo "clang-tidy does NOT appear to support heuristic '$h' (needed: $kw); will fallback to script for this check"
+      case $h in
+        virtual) MISSING_ARGS+=(--check-virtual) ;;
+        rtti) MISSING_ARGS+=(--check-rtti) ;;
+        heap) MISSING_ARGS+=(--check-heap) ;;
+        smartptr) MISSING_ARGS+=(--check-smartptr) ;;
+        throw) MISSING_ARGS+=(--check-throw) ;;
+      esac
+    fi
+  done
 fi
+
+# If there are missing heuristics, run the AST-based fallback only for them
+if [ ${#MISSING_ARGS[@]} -gt 0 ]; then
+  echo "Running AST-based fallback for: ${MISSING_ARGS[*]}"
+  if python3 scripts/arch_ast_checks.py "${MISSING_ARGS[@]}"; then
+    success "AST-based fallback checks passed"
+  else
+    RC=$?
+    if [ $RC -eq 1 ]; then
+      warning "AST-based fallback found warnings (see output above)"
+    elif [ $RC -eq 2 ]; then
+      error "AST-based fallback found errors (see output above)"
+    elif [ $RC -eq 3 ]; then
+      warning "AST-based fallback skipped: missing python libclang bindings. See docs/ARCHITECTURE_CHECKS.md for setup instructions."
+    else
+      error "AST-based fallback failed with unexpected exit code $RC"
+    fi
+  fi
+else
+  echo "All heuristics appear supported by clang-tidy; no AST fallback needed."
+fi
+
+# Note: The script previously performed textual grep-based checks for
+# 'virtual', 'new/malloc', and smart-pointer usage. These are now handled
+# by clang-tidy's AST-based diagnostics where possible; a libclang fallback
+# is used only for heuristics clang-tidy doesn't advertise support for.
+
 
 # Rule 5: Proper namespace structure
 echo "Checking namespace structure..."
@@ -115,15 +179,9 @@ if ! grep -q "difference_type" include/zip_view.hpp; then
 fi
 success "Iterator interface checks completed"
 
-# Rule 8: SFINAE-based conditional APIs (no runtime dispatch)
-echo "Checking for runtime polymorphism..."
-if grep -rn --include="*.hpp" "typeid" include/ 2>/dev/null | grep -v "//"; then
-  error "Runtime type information (typeid) found"
-fi
-if grep -rn --include="*.hpp" "dynamic_cast" include/ 2>/dev/null | grep -v "//"; then
-  error "Runtime type casting (dynamic_cast) found"
-fi
-success "No runtime polymorphism detected"
+# Runtime-polymorphism checks are handled by clang-tidy (typeid/dynamic_cast will be flagged by AST-based checks where applicable)
+# success message retained for script readability
+success "Runtime polymorphism checks delegated to clang-tidy"
 
 # Rule 9: Include guards or #pragma once
 echo "Checking include guards..."

@@ -22,9 +22,13 @@ Checks: >
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-pro-bounds-constant-array-index,
   -bugprone-unhandled-self-assignment,
-  -misc-include-cleaner
+  -misc-include-cleaner,
+  zipview-no-virtual,
+  zipview-no-rtti,
+  zipview-smartptr-usage,
+  zipview-noexcept-throw
 
-WarningsAsErrors: ''
+WarningsAsErrors: 'zipview-no-virtual,zipview-no-rtti'
 FormatStyle: file
 
 CheckOptions:

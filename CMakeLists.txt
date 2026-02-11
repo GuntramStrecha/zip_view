@@ -30,6 +30,8 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 add_subdirectory(tests)
 add_subdirectory(examples)
 add_subdirectory(benchmarks)
+# Optional: build our custom clang-tidy checks (disabled by default)
+add_subdirectory(tools/clang_tidy)
 
 # Add clang-format target
 if(CLANG_FORMAT_EXE)

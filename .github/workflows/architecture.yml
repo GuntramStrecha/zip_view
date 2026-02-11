@@ -33,67 +33,19 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Header-only verification
+    - name: Install libclang and python bindings for AST checks
       run: |
-        echo "Verifying header-only constraint..."
-        if find include/ -name "*.cpp" | grep -q .; then
-          echo "ERROR: .cpp files found in include/ directory"
-          exit 1
-        fi
-        echo "✓ No .cpp files in include/"
+        sudo apt-get update
+        sudo apt-get install -y libclang-dev python3-pip
+        python3 -m pip install --upgrade pip
+        python3 -m pip install clang
 
-    - name: Check for C++14+ features
+    - name: Run unified architecture validation script
       run: |
-        echo "Checking for C++14+ features in production code..."
-        BAD_FEATURES=$(grep -rn --include="*.hpp" -E \
-          "std::(make_unique|make_index_sequence|enable_if_t|decay_t|remove_reference_t|string_view)" \
-          include/ || true)
-        if [ ! -z "$BAD_FEATURES" ]; then
-          echo "ERROR: C++14+ features found in include/:"
-          echo "$BAD_FEATURES"
-          exit 1
-        fi
-        echo "✓ No C++14+ features detected"
-
-    - name: Check for virtual functions
-      run: |
-        echo "Checking for virtual functions (zero-cost abstraction)..."
-        VIRTUAL=$(grep -rn --include="*.hpp" -E "virtual[[:space:]]+" include/ | grep -v "//" || true)
-        if [ ! -z "$VIRTUAL" ]; then
-          echo "ERROR: virtual functions found in include/:"
-          echo "$VIRTUAL"
-          exit 1
-        fi
-        echo "✓ No virtual functions (zero-cost abstraction maintained)"
-
-    - name: Check namespace structure
-      run: |
-        echo "Checking namespace structure..."
-        if ! grep -q "namespace gst" include/zip_view.hpp; then
-          echo "ERROR: Missing gst namespace"
-          exit 1
-        fi
-        if ! grep -q "namespace detail" include/zip_view.hpp; then
-          echo "ERROR: Missing detail namespace"
-          exit 1
-        fi
-        if ! grep -q "namespace ranges" include/zip_view.hpp; then
-          echo "ERROR: Missing ranges namespace"
-          exit 1
-        fi
-        echo "✓ Namespace structure verified"
-
-  script-validation:
-    name: Architecture Script
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Run architecture validation script
-      run: |
+        echo "Running combined architecture validation (clang-tidy + scripted checks)..."
         chmod +x scripts/check_architecture.sh
         ./scripts/check_architecture.sh
+
 
   architecture-tests:
     name: Architecture Test Suite
@@ -122,18 +74,26 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install clang-tidy
+    - name: Install clang-tidy and build deps
       run: |
         sudo apt-get update
-        sudo apt-get install -y clang-tidy
+        sudo apt-get install -y clang-tidy libclang-dev python3-pip clang llvm-dev libllvm-dev
+        python3 -m pip install --upgrade pip
+        python3 -m pip install clang
 
-    - name: Configure CMake
+    - name: Configure CMake (enable custom clang-tidy plugin)
       run: |
         cmake -B build \
           -DCMAKE_CXX_COMPILER=g++ \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+          -DBUILD_CLANG_TIDY_CHECKS=ON \
           -S .
+
+    - name: Build clang-tidy plugin
+      run: |
+        # Build the custom clang-tidy plugin. Fail the job if plugin can't be built to ensure checks are enforced.
+        cmake --build build --target zipview_tidy
 
     - name: Run clang-tidy architecture checks
       run: |
@@ -148,7 +108,7 @@ jobs:
   summary:
     name: Architecture Summary
     runs-on: ubuntu-latest
-    needs: [cpp11-compatibility, static-analysis, script-validation, architecture-tests, clang-tidy-checks]
+    needs: [cpp11-compatibility, static-analysis, architecture-tests, clang-tidy-checks]
     if: success()
 
     steps:

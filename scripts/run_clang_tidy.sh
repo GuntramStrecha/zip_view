@@ -12,6 +12,28 @@ fi
 
 # Run clang-tidy with extra args to suppress unknown warning options
 # These warnings come from GCC-specific flags in compile_commands.json
-clang-tidy -p build include/zip_view.hpp \
+# Run against all headers in `include/` so new headers get checked automatically.
+FILES=$(find include -name "*.hpp" -print)
+if [ -z "$FILES" ]; then
+  echo "No headers found under include/"
+  exit 0
+fi
+
+# Attempt to load custom plugin if built
+PLUGIN_DIR="${PWD}/build/clang_tidy_plugins"
+PLUGIN_ARG=""
+if [ -d "$PLUGIN_DIR" ]; then
+  for f in "$PLUGIN_DIR"/zipview_tidy.*; do
+    if [ -f "$f" ]; then
+      echo "Loading clang-tidy plugin: $f"
+      PLUGIN_ARG="-load=$f"
+      break
+    fi
+  done
+fi
+
+# Execute clang-tidy across all found header files
+clang-tidy -p build $PLUGIN_ARG $FILES \
+  --header-filter=.* \
   --extra-arg=-Wno-unknown-warning-option \
   "$@"
