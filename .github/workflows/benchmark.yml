@@ -146,10 +146,17 @@ jobs:
       uses: benchmark-action/github-action-benchmark@v1
       with:
         name: C++ Benchmark
-        tool: 'google-benchmark'
+        tool: 'customSmallerIsBetter'
         output-file-path: artifacts/benchmark_results_merged.json
         gh-pages-branch: gh-pages
         benchmark-data-dir-path: dev/bench
         auto-push: true
         github-token: ${{ secrets.GITHUB_TOKEN }}
         max-items-in-chart: 999
+        skip-fetch-gh-pages: false
+        comment-always: false
+        summary-always: false
+        save-data-file: true
+        comment-on-alert: false
+        alert-threshold: 120%
+        fail-on-alert: true

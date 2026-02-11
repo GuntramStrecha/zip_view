@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Merge per-arch Google Benchmark JSON artifacts into a single JSON and create a simple markdown summary.
+"""Merge per-arch Google Benchmark JSON artifacts and produce outputs usable by
+`benchmark-action/github-action-benchmark`'s `customSmallerIsBetter` tool.
+
+This script performs three things:
+ - Reads per-arch artifacts at `<artifacts-dir>/benchmark-results-<arch>/benchmark_results.json`
+ - Writes `benchmark_results_merged.json` which is an array of {name, unit, value}
+   suitable for the action when using `tool: 'customSmallerIsBetter'`.
 
 Usage: merge_benchmarks.py --artifacts-dir artifacts --out-dir merged
 """
@@ -43,6 +49,41 @@ def create_summary(merged, out_path):
         f.write("\n".join(lines))
 
 
+def create_merged_json(merged, out_path):
+    out = []
+    for entry in merged:
+        arch = entry.get("arch")
+        results = entry.get("results")
+        if not isinstance(results, dict):
+            # Missing file or parse error was recorded earlier; skip.
+            continue
+        benches = results.get("benchmarks") or []
+        if not benches:
+            # Nothing to consume for this arch
+            continue
+        for b in benches:
+            if not isinstance(b, dict):
+                continue
+            name = b.get("name")
+            if not name:
+                continue
+            time = b.get("real_time")
+            unit = b.get("time_unit") or "ns"
+            if time is None:
+                continue
+            out.append({
+                "name": f"{name} [{arch}]",
+                "unit": unit,
+                "value": time,
+            })
+    try:
+        with open(out_path, "w") as f:
+            json.dump(out, f, indent=2)
+    except Exception as e:
+        print(f"Failed to write custom output file: {e}", file=sys.stderr)
+        sys.exit(3)
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--artifacts-dir", default="artifacts", help="Path where per-arch artifact folders live")
@@ -57,25 +98,23 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
 
     merged = []
-    console_lines = []
 
     for arch in arches:
         json_path = os.path.join(artifacts_dir, f"benchmark-results-{arch}", "benchmark_results.json")
-
         data = load_json_if_exists(json_path)
         entry = {"arch": arch, "results": data}
         merged.append(entry)
-
-    merged_json_path = os.path.join(out_dir, "benchmark_results_merged.json")
-    with open(merged_json_path, "w") as f:
-        json.dump(merged, f, indent=2)
 
     # Create human-readable summary
     summary_path = os.path.join(out_dir, "benchmark_summary.md")
     create_summary(merged, summary_path)
 
+    # Create format for `customSmallerIsBetter`
+    merged_path = os.path.join(out_dir, "benchmark_results_merged.json")
+    create_merged_json(merged, merged_path)
+
     # Print results for logs
-    print("Wrote:", merged_json_path)
+    print("Wrote:", merged_path)
     print("---\nSummary:\n")
     with open(summary_path) as f:
         print(f.read())
