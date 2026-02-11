@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769981341677,
+  "lastUpdate": 1770844133015,
   "repoUrl": "https://github.com/GuntramStrecha/zip_view",
   "entries": {
     "C++ Benchmark (x86_64)": [
@@ -5522,6 +5522,390 @@ window.BENCHMARK_DATA = {
             "range": "± 5159.049999999999",
             "unit": "us",
             "extra": "100 samples\n1 iterations"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "6010606+GuntramStrecha@users.noreply.github.com",
+            "name": "Guntram Strecha",
+            "username": "GuntramStrecha"
+          },
+          "committer": {
+            "email": "6010606+GuntramStrecha@users.noreply.github.com",
+            "name": "Guntram Strecha",
+            "username": "GuntramStrecha"
+          },
+          "distinct": true,
+          "id": "d2b3a0be167a12fa530794959e9a93b3a5734686",
+          "message": "Fix benchmark action tool",
+          "timestamp": "2026-02-11T22:06:26+01:00",
+          "tree_id": "814e1a6b0b793bfc4878c00fa85776482858af4f",
+          "url": "https://github.com/GuntramStrecha/zip_view/commit/d2b3a0be167a12fa530794959e9a93b3a5734686"
+        },
+        "date": 1770844132759,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "BM_StdZipWithSort [x86_64]",
+            "value": 75165.67883901953,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipWithSort [x86_64]",
+            "value": 72800.52017126314,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipWithFind [x86_64]",
+            "value": 15558.818214150797,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipWithFind [x86_64]",
+            "value": 15568.126880954214,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipConstruction [x86_64]",
+            "value": 0.310857711177684,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipConstruction [x86_64]",
+            "value": 0.3179560482054413,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipConstruction4Containers [x86_64]",
+            "value": 0.6247105202499742,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipConstruction4Containers [x86_64]",
+            "value": 0.6228227073340216,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipIteratorIncrement [x86_64]",
+            "value": 0.3123468317253659,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipIteratorIncrement [x86_64]",
+            "value": 0.3112213878730409,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipIteratorRandomAccess [x86_64]",
+            "value": 0.3146887397398719,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipIteratorRandomAccess [x86_64]",
+            "value": 0.3108621612881163,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipIterate [x86_64]",
+            "value": 55235.24225981474,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipIterate [x86_64]",
+            "value": 56169.86725663684,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipIterate4Ranges [x86_64]",
+            "value": 137934.5856157625,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipIterate4Ranges [x86_64]",
+            "value": 137934.9240331496,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipWithTemporaries [x86_64]",
+            "value": 231937.25787206198,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipWithTemporaries [x86_64]",
+            "value": 231795.53092953784,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipWithSort [x86_32]",
+            "value": 94892.13896748541,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipWithSort [x86_32]",
+            "value": 80097.50266038642,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipWithFind [x86_32]",
+            "value": 31257.380114877375,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipWithFind [x86_32]",
+            "value": 15663.504421617667,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipConstruction [x86_32]",
+            "value": 0.621406272590787,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipConstruction [x86_32]",
+            "value": 0.622241363148774,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipConstruction4Containers [x86_32]",
+            "value": 0.7774133165300662,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipConstruction4Containers [x86_32]",
+            "value": 0.777967799377212,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipIteratorIncrement [x86_32]",
+            "value": 31163.366065074893,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipIteratorIncrement [x86_32]",
+            "value": 31110.362339454732,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipIteratorRandomAccess [x86_32]",
+            "value": 0.6209925156723834,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipIteratorRandomAccess [x86_32]",
+            "value": 0.6218433717793912,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipIterate [x86_32]",
+            "value": 352541.81072874094,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipIterate [x86_32]",
+            "value": 355448.65032847255,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipIterate4Ranges [x86_32]",
+            "value": 374115.6611349564,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipIterate4Ranges [x86_32]",
+            "value": 374813.42689436954,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipWithTemporaries [x86_32]",
+            "value": 987312.692524729,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipWithTemporaries [x86_32]",
+            "value": 845480.0278450222,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipWithSort [arm64]",
+            "value": 55460.22742738234,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipWithSort [arm64]",
+            "value": 53996.08731593259,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipWithFind [arm64]",
+            "value": 17828.7404852214,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipWithFind [arm64]",
+            "value": 17818.261955055652,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipConstruction [arm64]",
+            "value": 0.29463919156031587,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipConstruction [arm64]",
+            "value": 0.29463822138251305,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipConstruction4Containers [arm64]",
+            "value": 0.5898544450553449,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipConstruction4Containers [arm64]",
+            "value": 0.5897768711956234,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipIteratorIncrement [arm64]",
+            "value": 0.29463360966333974,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipIteratorIncrement [arm64]",
+            "value": 0.2946763698314984,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipIteratorRandomAccess [arm64]",
+            "value": 0.2946403842186578,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipIteratorRandomAccess [arm64]",
+            "value": 0.29466338601899716,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipIterate [arm64]",
+            "value": 78647.27025792909,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipIterate [arm64]",
+            "value": 78631.37107419231,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipIterate4Ranges [arm64]",
+            "value": 114997.8473684237,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipIterate4Ranges [arm64]",
+            "value": 115025.69439420827,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipWithTemporaries [arm64]",
+            "value": 312015.6960566912,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipWithTemporaries [arm64]",
+            "value": 312344.4084693363,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipWithSort [arm32]",
+            "value": 480481.9444064174,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipWithSort [arm32]",
+            "value": 476152.94489745866,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipWithFind [arm32]",
+            "value": 186553.9674753389,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipWithFind [arm32]",
+            "value": 184512.3250000008,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipConstruction [arm32]",
+            "value": 3.0959215521653367,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipConstruction [arm32]",
+            "value": 3.09525443056795,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipConstruction4Containers [arm32]",
+            "value": 3.8049898948986125,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipConstruction4Containers [arm32]",
+            "value": 3.8246708616943925,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipIteratorIncrement [arm32]",
+            "value": 179068.57574206463,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipIteratorIncrement [arm32]",
+            "value": 179060.3410079345,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipIteratorRandomAccess [arm32]",
+            "value": 3.230611510601093,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipIteratorRandomAccess [arm32]",
+            "value": 3.1916343122102497,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipIterate [arm32]",
+            "value": 1904560.3024523193,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipIterate [arm32]",
+            "value": 1905675.4141689509,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipIterate4Ranges [arm32]",
+            "value": 1879619.0884718369,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipIterate4Ranges [arm32]",
+            "value": 1635566.6627634598,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_StdZipWithTemporaries [arm32]",
+            "value": 6052807.956140433,
+            "unit": "ns"
+          },
+          {
+            "name": "BM_GstZipWithTemporaries [arm32]",
+            "value": 5640140.601625915,
+            "unit": "ns"
           }
         ]
       }
