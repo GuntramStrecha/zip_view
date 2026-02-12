@@ -20,7 +20,7 @@ if(CODE_COVERAGE)
   find_program(GCOVR_EXE NAMES gcovr)
   if(GCOVR_EXE)
     # Common gcovr args
-    set(GCOVR_FILTER_ARGS --filter ${CMAKE_SOURCE_DIR}/include/ --exclude-throw-branches)
+    set(GCOVR_FILTER_ARGS --filter ${CMAKE_SOURCE_DIR}/include/ --exclude ${CMAKE_SOURCE_DIR}/tests/ --exclude-throw-branches)
     set(GCOVR_GCOV_OPTION "")
 
     # For Clang, prefer using llvm-cov as the gcov wrapper

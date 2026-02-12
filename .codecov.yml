@@ -1,0 +1,6 @@
+# Codecov configuration - explicitly ignore test sources from coverage reports
+# See: https://docs.codecov.com/docs/codecov-yaml
+
+ignore:
+  - "tests/**"   # do not report coverage for test sources
+  - "build/**"   # optional: ignore build artifacts
