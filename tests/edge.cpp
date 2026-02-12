@@ -9,7 +9,6 @@
 #include <catch2/catch_test_macros.hpp>
 #endif
 
-#include <algorithm>
 #include <array>
 #include <deque>
 #include <list>
@@ -113,7 +112,7 @@ SCENARIO("Testing gst::ranges::zip_view with edge scenarios", "[edge]")
       int   a;
       char  b;
       float c;
-      bool  operator==(Custom const& other) const
+      auto  operator==(Custom const& other) const -> bool
       {
         return std::equal_to{}(std::tie(a, b, c), std::tie(other.a, other.b, other.c));
       }

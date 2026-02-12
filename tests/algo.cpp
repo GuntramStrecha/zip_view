@@ -1345,3 +1345,404 @@ SCENARIO("std::unique works on sorted zip_view", "[algorithms][unique]")
     }
   }
 }
+
+SCENARIO("Using std::for_each on nested zip_views", "[zip_view][nested][algo]")
+{
+  std::vector<int> v1 = {1, 2, 3};
+  std::vector<int> v2 = {4, 5, 6};
+  std::vector<int> v3 = {7, 8, 9};
+  std::vector<int> v4 = {10, 11, 12};
+
+  auto zip1   = gst::ranges::views::zip(v1, v2);
+  auto zip2   = gst::ranges::views::zip(v3, v4);
+  auto nested = gst::ranges::views::zip(zip1, zip2);
+
+  THEN("std::for_each can iterate and access nested elements")
+  {
+    int  sum         = 0;
+    auto collect_sum = [&sum](auto elem)
+    {
+      auto t0  = std::get<0>(elem);
+      sum     += std::get<0>(t0) + std::get<1>(t0);
+    };
+    auto [zip_end, _] = std::ranges::for_each(nested, collect_sum);
+    REQUIRE(zip_end == nested.end());
+    REQUIRE(sum == 21);
+  }
+
+  THEN("std::for_each can modify elements through nested zip_view")
+  {
+    auto multiply_first_by_10 = [](auto&& elem)
+    {
+      auto t0          = std::get<0>(elem);
+      std::get<0>(t0) *= 10;
+    };
+    auto [zip_end2, _2] = std::ranges::for_each(nested, multiply_first_by_10);
+    REQUIRE(zip_end2 == nested.end());
+    REQUIRE(v1 == std::vector<int>{10, 20, 30});
+  }
+}
+
+SCENARIO("Using std::count_if on nested zip_views", "[zip_view][nested][algo]")
+{
+  std::vector<int> v1 = {1, 2, 3, 4, 5};
+  std::vector<int> v2 = {2, 4, 6, 8, 10};
+  std::vector<int> v3 = {1, 3, 5, 7, 9};
+
+  auto nested = gst::ranges::views::zip(gst::ranges::views::zip(v1, v2), v3);
+
+  THEN("std::count_if works on nested zip_views")
+  {
+    auto v1_greater_than_2 = [](auto elem)
+    {
+      auto t0 = std::get<0>(elem);
+      return std::get<0>(t0) > 2;
+    };
+    auto count = std::ranges::count_if(nested, v1_greater_than_2);
+    REQUIRE(count == 3);
+  }
+
+  THEN("std::count_if with complex predicate on nested elements")
+  {
+    auto complex_pred = [](auto elem)
+    {
+      auto t0      = std::get<0>(elem);
+      auto regular = std::get<1>(elem);
+      return std::get<1>(t0) % 4 == 0 && regular % 2 == 1;
+    };
+    auto count = std::ranges::count_if(nested, complex_pred);
+    REQUIRE(count == 2);
+  }
+}
+
+SCENARIO("Using std::transform on nested zip_views", "[zip_view][nested][algo]")
+{
+  std::vector<int> v1 = {1, 2, 3};
+  std::vector<int> v2 = {10, 20, 30};
+  std::vector<int> v3 = {100, 200, 300};
+
+  auto zip1   = gst::ranges::views::zip(v1, v2);
+  auto zip2   = gst::ranges::views::zip(v2, v3);
+  auto nested = gst::ranges::views::zip(zip1, zip2);
+
+  std::vector<int> results;
+
+  THEN("std::transform can extract and combine nested elements")
+  {
+    auto extract_and_add = [](auto elem)
+    {
+      auto t0 = std::get<0>(elem);
+      auto t1 = std::get<1>(elem);
+      return std::get<0>(t0) + std::get<1>(t1);
+    };
+    std::ranges::transform(nested, std::back_inserter(results), extract_and_add);
+    REQUIRE(results == std::vector<int>{101, 202, 303});
+  }
+}
+
+SCENARIO("Using std::any_of and std::all_of on nested zip_views", "[zip_view][nested][algo]")
+{
+  std::vector<int> v1 = {2, 4, 6};
+  std::vector<int> v2 = {1, 3, 5};
+  std::vector<int> v3 = {10, 20, 30};
+
+  auto nested = gst::ranges::views::zip(gst::ranges::views::zip(v1, v2), v3);
+
+  THEN("std::any_of works on nested zip_views")
+  {
+    auto has_even_pred = [](auto elem)
+    {
+      auto t0 = std::get<0>(elem);
+      return std::get<0>(t0) % 2 == 0;
+    };
+    bool has_even_in_first = std::ranges::any_of(nested, has_even_pred);
+    REQUIRE(has_even_in_first);
+  }
+
+  THEN("std::all_of works on nested zip_views")
+  {
+    bool all_positive =
+      std::all_of(nested.begin(),
+                  nested.end(),
+                  [](auto elem) { return std::get<0>(elem) > std::make_tuple(0, 0); });
+    REQUIRE(all_positive);
+  }
+}
+
+SCENARIO("Using std::find_if on nested zip_views", "[zip_view][nested][algo]")
+{
+  std::vector<int> v1 = {1, 2, 3, 4, 5};
+  std::vector<int> v2 = {10, 20, 30, 40, 50};
+  std::vector<int> v3 = {5, 4, 3, 2, 1};
+
+  auto zip1   = gst::ranges::views::zip(v1, v2);
+  auto zip2   = gst::ranges::views::zip(v2, v3);
+  auto nested = gst::ranges::views::zip(zip1, zip2);
+
+  THEN("std::find_if can locate specific nested elements")
+  {
+    auto find_v1_eq_3 = [](auto elem)
+    {
+      auto t0 = std::get<0>(elem);
+      return std::get<0>(t0) == 3;
+    };
+    auto it = std::ranges::find_if(nested, find_v1_eq_3);
+
+    REQUIRE(it != nested.end());
+    auto found = *it;
+    auto t0    = std::get<0>(found);
+    REQUIRE(std::get<1>(t0) == 30);
+  }
+}
+
+SCENARIO("Using std::fold_left on nested zip_views", "[zip_view][nested][algo]")
+{
+  std::vector<int> v1 = {1, 2, 3};
+  std::vector<int> v2 = {4, 5, 6};
+  std::vector<int> v3 = {7, 8, 9};
+
+  auto nested = gst::ranges::views::zip(gst::ranges::views::zip(v1, v2), v3);
+
+  THEN("std::fold_left can sum nested elements")
+  {
+    auto fold_sum = [](int acc, auto elem)
+    {
+      auto t0 = std::get<0>(elem);
+      return acc + std::get<0>(t0) + std::get<1>(elem);
+    };
+    int sum = std::ranges::fold_left(nested, 0, fold_sum);
+    REQUIRE(sum == 30);
+  }
+}
+
+SCENARIO("Using std::copy_if with nested zip_views", "[zip_view][nested][algo]")
+{
+  std::vector<int> v1 = {1, 2, 3, 4, 5};
+  std::vector<int> v2 = {10, 20, 30, 40, 50};
+  std::vector<int> v3 = {2, 4, 6, 8, 10};
+
+  auto             nested = gst::ranges::views::zip(gst::ranges::views::zip(v1, v2), v3);
+  std::vector<int> selected;
+
+  THEN("std::copy_if can filter and extract from nested zip_views")
+  {
+    auto select_and_append = [&selected](auto elem)
+    {
+      auto t0 = std::get<0>(elem);
+      if (std::get<0>(t0) > 2) selected.push_back(std::get<0>(t0));
+    };
+    std::ranges::for_each(nested, select_and_append);
+    REQUIRE(selected == std::vector<int>{3, 4, 5});
+  }
+}
+
+SCENARIO("For-each on inline temporary nested zip_views", "[zip_view][nested][algo]")
+{
+  std::vector<int> v1 = {1, 2, 3, 4};
+  std::vector<int> v2 = {10, 20, 30, 40};
+  std::vector<int> v3 = {100, 200, 300, 400};
+  std::vector<int> v4 = {5, 6, 7, 8};
+
+  THEN("Can apply std::for_each directly to temporary nested zip_view")
+  {
+    int  sum            = 0;
+    auto tmp_accumulate = [&sum](auto elem)
+    {
+      auto t0  = std::get<0>(elem);
+      auto t1  = std::get<1>(elem);
+      sum     += std::get<0>(t0) + std::get<0>(t1);
+    };
+    auto [tmp_it, _tmp] = std::ranges::for_each(
+      gst::ranges::views::zip(gst::ranges::views::zip(v1, v2), gst::ranges::views::zip(v3, v4)),
+      tmp_accumulate);
+    (void)tmp_it;
+    REQUIRE(sum == 1010);
+  }
+
+  THEN("Can modify through std::for_each on temporary nested zip_view")
+  {
+    auto tmp_double_second = [](auto&& elem)
+    {
+      auto t0          = std::get<0>(elem);
+      std::get<1>(t0) *= 2;
+    };
+    std::ranges::for_each(gst::ranges::views::zip(gst::ranges::views::zip(v1, v2), v4),
+                          tmp_double_second);
+    REQUIRE(v2 == std::vector<int>{20, 40, 60, 80});
+  }
+}
+
+SCENARIO("Count_if on inline temporary nested zip_views", "[zip_view][nested][algo]")
+{
+  std::vector<int> v1 = {1, 2, 3, 4, 5};
+  std::vector<int> v2 = {2, 4, 6, 8, 10};
+  std::vector<int> v3 = {10, 20, 30, 40, 50};
+
+  THEN("std::count_if works directly on temporary nested zip_view")
+  {
+    auto tmp_count_pred = [](auto elem)
+    {
+      auto t0 = std::get<0>(elem);
+      return std::get<0>(t0) > 2 && std::get<1>(t0) % 4 == 0;
+    };
+    auto count = std::ranges::count_if(gst::ranges::views::zip(gst::ranges::views::zip(v1, v2), v3),
+                                       tmp_count_pred);
+    REQUIRE(count == 1);
+  }
+}
+
+SCENARIO("Any_of on inline temporary nested zip_views", "[zip_view][nested][algo]")
+{
+  std::vector<int> v1 = {1, 3, 5, 7};
+  std::vector<int> v2 = {2, 4, 6, 8};
+  std::vector<int> v3 = {10, 20, 30, 40};
+
+  THEN("std::any_of works on temporary nested zip_view")
+  {
+    auto tmp_any_pred = [](auto elem)
+    {
+      auto t0 = std::get<0>(elem);
+      return std::get<0>(t0) + std::get<1>(t0) + std::get<1>(elem) > 50;
+    };
+    bool has_sum_greater_than_50 = std::ranges::any_of(
+      gst::ranges::views::zip(gst::ranges::views::zip(v1, v2), v3), tmp_any_pred);
+    REQUIRE(has_sum_greater_than_50);
+  }
+}
+
+SCENARIO("Transform on inline temporary nested zip_views", "[zip_view][nested][algo]")
+{
+  std::vector<int> v1 = {1, 2, 3};
+  std::vector<int> v2 = {4, 5, 6};
+  std::vector<int> v3 = {7, 8, 9};
+  std::vector<int> v4 = {10, 11, 12};
+  std::vector<int> results;
+
+  THEN("std::transform works on temporary nested zip_view")
+  {
+    auto tmp_transform = [](auto elem)
+    {
+      auto t0 = std::get<0>(elem);
+      auto t1 = std::get<1>(elem);
+      return std::get<0>(t0) + std::get<1>(t0) + std::get<0>(t1) + std::get<1>(t1);
+    };
+    std::ranges::transform(
+      gst::ranges::views::zip(gst::ranges::views::zip(v1, v2), gst::ranges::views::zip(v3, v4)),
+      std::back_inserter(results),
+      tmp_transform);
+    REQUIRE(results == std::vector<int>{22, 26, 30});
+  }
+}
+
+SCENARIO("Find_if on inline temporary nested zip_views", "[zip_view][nested][algo]")
+{
+  std::vector<int> v1 = {10, 20, 30, 40, 50};
+  std::vector<int> v2 = {1, 2, 3, 4, 5};
+  std::vector<int> v3 = {5, 4, 3, 2, 1};
+
+  THEN("std::find_if locates element in temporary nested zip_view")
+  {
+    auto temp_zip = gst::ranges::views::zip(gst::ranges::views::zip(v1, v2), v3);
+    auto tmp_find = [](auto elem)
+    {
+      auto t0 = std::get<0>(elem);
+      return std::get<0>(t0) == 30;
+    };
+    auto it = std::ranges::find_if(temp_zip, tmp_find);
+
+    REQUIRE(it != temp_zip.end());
+    auto found = *it;
+    auto t0    = std::get<0>(found);
+    REQUIRE(std::get<1>(t0) == 3);
+    REQUIRE(std::get<1>(found) == 3);
+  }
+}
+
+SCENARIO("Accumulate on inline temporary nested zip_views", "[zip_view][nested][algo]")
+{
+  std::vector<int> v1 = {1, 2, 3};
+  std::vector<int> v2 = {10, 20, 30};
+  std::vector<int> v3 = {100, 200, 300};
+
+  THEN("std::fold_left works on temporary nested zip_view")
+  {
+    auto temp     = gst::ranges::views::zip(gst::ranges::views::zip(v1, v2), v3);
+    auto tmp_fold = [](int acc, auto elem)
+    {
+      auto t0 = std::get<0>(elem);
+      return acc * std::get<0>(t0);
+    };
+    int product = std::ranges::fold_left(temp, 1, tmp_fold);
+    REQUIRE(product == 6);
+  }
+}
+
+SCENARIO("All_of on deeply nested temporary zip_views", "[zip_view][nested][algo]")
+{
+  std::vector<int> v1 = {1, 2, 3};
+  std::vector<int> v2 = {4, 5, 6};
+  std::vector<int> v3 = {7, 8, 9};
+  std::vector<int> v4 = {10, 11, 12};
+  std::vector<int> v5 = {2, 2, 2};
+
+  THEN("std::all_of works on deeply nested temporary zip_view")
+  {
+    auto tmp_all_pred = [](auto elem) { return std::get<1>(elem) > 0; };
+    bool all_positive = std::ranges::all_of(
+      gst::ranges::views::zip(
+        gst::ranges::views::zip(gst::ranges::views::zip(v1, v2), gst::ranges::views::zip(v3, v4)),
+        v5),
+      tmp_all_pred);
+    REQUIRE(all_positive);
+  }
+}
+
+SCENARIO("Chaining algorithms on inline temporary nested zip_views", "[zip_view][nested][algo]")
+{
+  std::vector<int> v1 = {1, 2, 3, 4, 5};
+  std::vector<int> v2 = {10, 20, 30, 40, 50};
+  std::vector<int> v3 = {5, 4, 3, 2, 1};
+
+  THEN("Can chain multiple algorithm operations on temporary nested zip_view")
+  {
+    auto temp = gst::ranges::views::zip(gst::ranges::views::zip(v1, v2), v3);
+
+    auto count_pred = [](auto elem)
+    {
+      auto t0 = std::get<0>(elem);
+      return std::get<0>(t0) > 2;
+    };
+    auto count = std::ranges::count_if(temp, count_pred);
+    REQUIRE(count == 3);
+
+    auto find_pred = [](auto elem) { return std::get<1>(elem) < 3; };
+    auto it        = std::ranges::find_if(temp, find_pred);
+    REQUIRE(it != temp.end());
+
+    auto sum_proj = [](int acc, auto elem)
+    {
+      auto t0 = std::get<0>(elem);
+      return acc + std::get<1>(t0);
+    };
+    int sum = std::ranges::fold_left(temp, 0, sum_proj);
+    REQUIRE(sum == 150);
+  }
+}
+
+SCENARIO("Range-based for on inline temporary nested zip_views", "[zip_view][nested][algo]")
+{
+  std::vector<int> v1 = {1, 2, 3};
+  std::vector<int> v2 = {4, 5, 6};
+  std::vector<int> v3 = {7, 8, 9};
+
+  THEN("Can use range-based for on temporary created inline")
+  {
+    int sum = 0;
+    for (auto elem : gst::ranges::views::zip(gst::ranges::views::zip(v1, v2), v3))
+    {
+      auto t0  = std::get<0>(elem);
+      sum     += std::get<0>(t0) + std::get<1>(elem);
+    }
+    REQUIRE(sum == 30);
+  }
+}
