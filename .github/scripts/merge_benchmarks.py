@@ -28,6 +28,11 @@ def load_json_if_exists(path):
 
 
 def create_summary(merged, out_path):
+    """Write a concise summary showing one value per `run_name`.
+
+    Prefer the `aggregate` entry named `mean`. If not available, compute the
+    mean from `iteration` (repetition) entries.
+    """
     lines = []
     lines.append("## Benchmark Results Summary (All Architectures)\n")
     for block in merged:
@@ -35,13 +40,23 @@ def create_summary(merged, out_path):
         results = block.get("results") or {}
         lines.append(f"### {arch}\n")
         benches = results.get("benchmarks") if isinstance(results, dict) else []
-        if benches:
+
+        # only accept explicit aggregate-mean entries
+        mean_map = {}
+        for b in benches:
+            run_name = b.get("run_name") or b.get("name")
+            if not run_name:
+                continue
+            if b.get("run_type") == "aggregate" and b.get("aggregate_name") == "mean":
+                val = b.get("real_time")
+                unit = b.get("time_unit") or b.get("aggregate_unit") or "ns"
+                if val is not None:
+                    mean_map[run_name] = (val, unit)
+
+        if mean_map:
             lines.append("```text")
-            for b in benches:
-                name = b.get("name")
-                time = b.get("real_time")
-                unit = b.get("time_unit")
-                lines.append(f"{name}: {time} {unit}")
+            for rn, (t, u) in sorted(mean_map.items()):
+                lines.append(f"{rn}: {t} {u}")
             lines.append("```\n")
         else:
             lines.append("No benchmark data found\n")
@@ -50,6 +65,11 @@ def create_summary(merged, out_path):
 
 
 def create_merged_json(merged, out_path):
+    """Produce one merged value per `run_name` per architecture.
+
+    - Prefer `aggregate` entries with `aggregate_name == 'mean'`.
+    - Fallback: compute mean across `iteration` (repetition) entries.
+    """
     out = []
     for entry in merged:
         arch = entry.get("arch")
@@ -61,18 +81,25 @@ def create_merged_json(merged, out_path):
         if not benches:
             # Nothing to consume for this arch
             continue
+
+        # collect only explicit aggregate mean entries
+        selected = {}
         for b in benches:
             if not isinstance(b, dict):
                 continue
-            name = b.get("name")
-            if not name:
+            run_name = b.get("run_name") or b.get("name")
+            if not run_name:
                 continue
-            time = b.get("real_time")
-            unit = b.get("time_unit") or "ns"
-            if time is None:
-                continue
+            if b.get("run_type") == "aggregate" and b.get("aggregate_name") == "mean":
+                time = b.get("real_time")
+                unit = b.get("time_unit") or b.get("aggregate_unit") or "ns"
+                if time is not None:
+                    selected[run_name] = (time, unit)
+
+        # emit one entry per run_name (only mean entries)
+        for rn, (time, unit) in sorted(selected.items()):
             out.append({
-                "name": f"{name} [{arch}]",
+                "name": f"{rn} [{arch}]",
                 "unit": unit,
                 "value": time,
             })
