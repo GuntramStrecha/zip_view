@@ -79,7 +79,7 @@ jobs:
     - name: Run Benchmarks
       run: |
         cd ${{ github.workspace }}/${{ matrix.build_dir }}
-        ${{ matrix.run_prefix }} ./benchmarks/ZipViewBenchmark --benchmark_format=json --benchmark_out=benchmark_results.json 2>&1
+        ${{ matrix.run_prefix }} ./benchmarks/ZipViewBenchmark --benchmark_repetitions=5 --benchmark_format=json --benchmark_out=benchmark_results.json 2>&1
 
     - name: Upload Benchmark Results
       uses: actions/upload-artifact@v4
