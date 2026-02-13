@@ -106,16 +106,8 @@ public:
   ref_view(ref_view&&) noexcept = default;
 
   // Assignment rebinds the reference (matches std::ranges::ref_view)
-  ref_view& operator=(ref_view const& other) noexcept
-  {
-    container_ = other.container_;
-    return *this;
-  }
-  ref_view& operator=(ref_view&& other) noexcept
-  {
-    container_ = other.container_;
-    return *this;
-  }
+  ref_view& operator=(ref_view const& other) noexcept = default;
+  ref_view& operator=(ref_view&& other) noexcept      = default;
 
   Container&       get() noexcept { return *container_; }
   Container const& get() const noexcept { return *container_; }
@@ -148,17 +140,9 @@ public:
 
   // Assignment replaces the owned container
   owning_view& operator=(owning_view const& other) noexcept(
-    std::is_nothrow_copy_assignable<Container>::value)
-  {
-    container_ = other.container_;
-    return *this;
-  }
+    std::is_nothrow_copy_assignable<Container>::value) = default;
   owning_view& operator=(owning_view&& other) noexcept(
-    std::is_nothrow_move_assignable<Container>::value)
-  {
-    container_ = std::move(other.container_);
-    return *this;
-  }
+    std::is_nothrow_move_assignable<Container>::value) = default;
 
   Container&       get() noexcept { return container_; }
   Container const& get() const noexcept { return container_; }
@@ -493,19 +477,11 @@ public:
     : views_(std::move(other.views_))
   {}
   ~zip_view() = default;
-
   zip_view& operator=(zip_view const& other) noexcept(
-    std::is_nothrow_copy_assignable<storage_tuple>::value)
-  {
-    views_ = other.views_;
-    return *this;
-  }
+    std::is_nothrow_copy_assignable<storage_tuple>::value) = default;
   zip_view& operator=(zip_view&& other) noexcept(
-    std::is_nothrow_move_assignable<storage_tuple>::value)
-  {
-    views_ = std::move(other.views_);
-    return *this;
-  }
+    std::is_nothrow_move_assignable<storage_tuple>::value) = default;
+
   explicit operator bool() const noexcept { return !empty(); }
   auto     operator[](typename iterator::difference_type const idx) const -> const_references
   {
