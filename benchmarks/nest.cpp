@@ -31,16 +31,6 @@ auto gst_zip(R&&... r)
 template <bool UseGst>
 static void BM_NestedZipIterate2x2_impl(benchmark::State& state)
 {
-  std::vector<int> v1(100000);
-  std::vector<int> v2(100000);
-  std::vector<int> v3(100000);
-  std::vector<int> v4(100000);
-
-  std::iota(v1.begin(), v1.end(), 0);
-  std::iota(v2.begin(), v2.end(), 100000);
-  std::iota(v3.begin(), v3.end(), 200000);
-  std::iota(v4.begin(), v4.end(), 300000);
-
   auto make_zip = [](auto&&... args)
   {
     if constexpr (UseGst)
@@ -49,8 +39,9 @@ static void BM_NestedZipIterate2x2_impl(benchmark::State& state)
       return std_zip(std::forward<decltype(args)>(args)...);
   };
 
-  auto zip1   = make_zip(v1, v2);
-  auto zip2   = make_zip(v3, v4);
+  using iota = std::ranges::iota_view<int, int>;
+  auto zip1   = make_zip(iota(0, 100000), iota(100000, 200000));
+  auto zip2   = make_zip(iota(200000, 300000), iota(300000, 400000));
   auto nested = make_zip(zip1, zip2);
 
   for (auto _ : state)
@@ -78,16 +69,6 @@ BENCHMARK(BM_GstNestedZipIterate2x2);
 template <bool UseGst>
 static void BM_NestedZipAccumulate_impl(benchmark::State& state)
 {
-  std::vector<int> v1(100000);
-  std::vector<int> v2(100000);
-  std::vector<int> v3(100000);
-  std::vector<int> v4(100000);
-
-  std::iota(v1.begin(), v1.end(), 0);
-  std::iota(v2.begin(), v2.end(), 100000);
-  std::iota(v3.begin(), v3.end(), 200000);
-  std::iota(v4.begin(), v4.end(), 300000);
-
   auto make_zip = [](auto&&... args)
   {
     if constexpr (UseGst)
@@ -96,8 +77,9 @@ static void BM_NestedZipAccumulate_impl(benchmark::State& state)
       return std_zip(std::forward<decltype(args)>(args)...);
   };
 
-  auto zip1   = make_zip(v1, v2);
-  auto zip2   = make_zip(v3, v4);
+  using iota = std::ranges::iota_view<int, int>;
+  auto zip1   = make_zip(iota(0, 100000), iota(100000, 200000));
+  auto zip2   = make_zip(iota(200000, 300000), iota(300000, 400000));
   auto nested = make_zip(zip1, zip2);
 
   for (auto _ : state)
@@ -128,17 +110,6 @@ BENCHMARK(BM_GstNestedZipAccumulate);
 template <bool UseGst>
 static void BM_NestedZipTransform_impl(benchmark::State& state)
 {
-  std::vector<int> v1(100000);
-  std::vector<int> v2(100000);
-  std::vector<int> v3(100000);
-  std::vector<int> v4(100000);
-  std::vector<int> out(100000);
-
-  std::iota(v1.begin(), v1.end(), 0);
-  std::iota(v2.begin(), v2.end(), 100000);
-  std::iota(v3.begin(), v3.end(), 200000);
-  std::iota(v4.begin(), v4.end(), 300000);
-
   auto make_zip = [](auto&&... args)
   {
     if constexpr (UseGst)
@@ -147,9 +118,11 @@ static void BM_NestedZipTransform_impl(benchmark::State& state)
       return std_zip(std::forward<decltype(args)>(args)...);
   };
 
-  auto zip1   = make_zip(v1, v2);
-  auto zip2   = make_zip(v3, v4);
+  using iota = std::ranges::iota_view<int, int>;
+  auto zip1   = make_zip(iota(0, 100000), iota(100000, 200000));
+  auto zip2   = make_zip(iota(200000, 300000), iota(300000, 400000));
   auto nested = make_zip(zip1, zip2);
+  auto out    = std::array<int, 100000>{};
 
   for (auto _ : state)
   {
@@ -175,16 +148,6 @@ BENCHMARK(BM_GstNestedZipTransform);
 template <bool UseGst>
 static void BM_NestedZipFindIf_impl(benchmark::State& state)
 {
-  std::vector<int> v1(100000);
-  std::vector<int> v2(100000);
-  std::vector<int> v3(100000);
-  std::vector<int> v4(100000);
-
-  std::iota(v1.begin(), v1.end(), 0);
-  std::iota(v2.begin(), v2.end(), 100000);
-  std::iota(v3.begin(), v3.end(), 200000);
-  std::iota(v4.begin(), v4.end(), 300000);
-
   auto make_zip = [](auto&&... args)
   {
     if constexpr (UseGst)
@@ -193,8 +156,9 @@ static void BM_NestedZipFindIf_impl(benchmark::State& state)
       return std_zip(std::forward<decltype(args)>(args)...);
   };
 
-  auto zip1   = make_zip(v1, v2);
-  auto zip2   = make_zip(v3, v4);
+  using iota = std::ranges::iota_view<int, int>;
+  auto zip1   = make_zip(iota(0, 100000), iota(100000, 200000));
+  auto zip2   = make_zip(iota(200000, 300000), iota(300000, 400000));
   auto nested = make_zip(zip1, zip2);
 
   for (auto _ : state)
@@ -219,16 +183,6 @@ BENCHMARK(BM_GstNestedZipFindIf);
 template <bool UseGst>
 static void BM_NestedZipForEach_impl(benchmark::State& state)
 {
-  std::vector<int> v1(100000);
-  std::vector<int> v2(100000);
-  std::vector<int> v3(100000);
-  std::vector<int> v4(100000);
-
-  std::iota(v1.begin(), v1.end(), 0);
-  std::iota(v2.begin(), v2.end(), 100000);
-  std::iota(v3.begin(), v3.end(), 200000);
-  std::iota(v4.begin(), v4.end(), 300000);
-
   auto make_zip = [](auto&&... args)
   {
     if constexpr (UseGst)
@@ -237,8 +191,9 @@ static void BM_NestedZipForEach_impl(benchmark::State& state)
       return std_zip(std::forward<decltype(args)>(args)...);
   };
 
-  auto zip1   = make_zip(v1, v2);
-  auto zip2   = make_zip(v3, v4);
+  using iota = std::ranges::iota_view<int, int>;
+  auto zip1   = make_zip(iota(0, 100000), iota(100000, 200000));
+  auto zip2   = make_zip(iota(200000, 300000), iota(300000, 400000));
   auto nested = make_zip(zip1, zip2);
 
   for (auto _ : state)
@@ -265,24 +220,6 @@ BENCHMARK(BM_GstNestedZipForEach);
 template <bool UseGst>
 static void BM_NestedZipIterate2x2x2_impl(benchmark::State& state)
 {
-  std::vector<int> v1(50000);
-  std::vector<int> v2(50000);
-  std::vector<int> v3(50000);
-  std::vector<int> v4(50000);
-  std::vector<int> v5(50000);
-  std::vector<int> v6(50000);
-  std::vector<int> v7(50000);
-  std::vector<int> v8(50000);
-
-  std::iota(v1.begin(), v1.end(), 0);
-  std::iota(v2.begin(), v2.end(), 50000);
-  std::iota(v3.begin(), v3.end(), 100000);
-  std::iota(v4.begin(), v4.end(), 150000);
-  std::iota(v5.begin(), v5.end(), 200000);
-  std::iota(v6.begin(), v6.end(), 250000);
-  std::iota(v7.begin(), v7.end(), 300000);
-  std::iota(v8.begin(), v8.end(), 350000);
-
   auto make_zip = [](auto&&... args)
   {
     if constexpr (UseGst)
@@ -291,10 +228,11 @@ static void BM_NestedZipIterate2x2x2_impl(benchmark::State& state)
       return std_zip(std::forward<decltype(args)>(args)...);
   };
 
-  auto zip1_1 = make_zip(v1, v2);
-  auto zip1_2 = make_zip(v3, v4);
-  auto zip2_1 = make_zip(v5, v6);
-  auto zip2_2 = make_zip(v7, v8);
+  using iota = std::ranges::iota_view<int, int>;
+  auto zip1_1 = make_zip(iota(0, 50000), iota(50000, 100000));
+  auto zip1_2 = make_zip(iota(100000, 150000), iota(150000, 200000));
+  auto zip2_1 = make_zip(iota(200000, 250000), iota(250000, 300000));
+  auto zip2_2 = make_zip(iota(300000, 350000), iota(350000, 400000));
   auto nested = make_zip(zip1_1, zip1_2, zip2_1, zip2_2);
 
   for (auto _ : state)
@@ -328,24 +266,6 @@ BENCHMARK(BM_GstNestedZipIterate2x2x2);
 template <bool UseGst>
 static void BM_DeepNestedZipIterate_impl(benchmark::State& state)
 {
-  std::vector<int> v1(50000);
-  std::vector<int> v2(50000);
-  std::vector<int> v3(50000);
-  std::vector<int> v4(50000);
-  std::vector<int> v5(50000);
-  std::vector<int> v6(50000);
-  std::vector<int> v7(50000);
-  std::vector<int> v8(50000);
-
-  std::iota(v1.begin(), v1.end(), 0);
-  std::iota(v2.begin(), v2.end(), 50000);
-  std::iota(v3.begin(), v3.end(), 100000);
-  std::iota(v4.begin(), v4.end(), 150000);
-  std::iota(v5.begin(), v5.end(), 200000);
-  std::iota(v6.begin(), v6.end(), 250000);
-  std::iota(v7.begin(), v7.end(), 300000);
-  std::iota(v8.begin(), v8.end(), 350000);
-
   auto make_zip = [](auto&&... args)
   {
     if constexpr (UseGst)
@@ -354,10 +274,11 @@ static void BM_DeepNestedZipIterate_impl(benchmark::State& state)
       return std_zip(std::forward<decltype(args)>(args)...);
   };
 
-  auto zip1_1      = make_zip(v1, v2);
-  auto zip1_2      = make_zip(v3, v4);
-  auto zip2_1      = make_zip(v5, v6);
-  auto zip2_2      = make_zip(v7, v8);
+  using iota = std::ranges::iota_view<int, int>;
+  auto zip1_1      = make_zip(iota(0, 50000), iota(50000, 100000));
+  auto zip1_2      = make_zip(iota(100000, 150000), iota(150000, 200000));
+  auto zip2_1      = make_zip(iota(200000, 250000), iota(250000, 300000));
+  auto zip2_2      = make_zip(iota(300000, 350000), iota(350000, 400000));
   auto nested_1    = make_zip(zip1_1, zip1_2);
   auto nested_2    = make_zip(zip2_1, zip2_2);
   auto deep_nested = make_zip(nested_1, nested_2);
@@ -395,16 +316,6 @@ BENCHMARK(BM_GstDeepNestedZipIterate);
 template <bool UseGst>
 static void BM_NestedZipSubscriptAccess_impl(benchmark::State& state)
 {
-  std::vector<int> v1(100000);
-  std::vector<int> v2(100000);
-  std::vector<int> v3(100000);
-  std::vector<int> v4(100000);
-
-  std::iota(v1.begin(), v1.end(), 0);
-  std::iota(v2.begin(), v2.end(), 100000);
-  std::iota(v3.begin(), v3.end(), 200000);
-  std::iota(v4.begin(), v4.end(), 300000);
-
   auto make_zip = [](auto&&... args)
   {
     if constexpr (UseGst)
@@ -413,8 +324,9 @@ static void BM_NestedZipSubscriptAccess_impl(benchmark::State& state)
       return std_zip(std::forward<decltype(args)>(args)...);
   };
 
-  auto zip1   = make_zip(v1, v2);
-  auto zip2   = make_zip(v3, v4);
+  using iota = std::ranges::iota_view<int, int>;
+  auto zip1   = make_zip(iota(0, 100000), iota(100000, 200000));
+  auto zip2   = make_zip(iota(200000, 300000), iota(300000, 400000));
   auto nested = make_zip(zip1, zip2);
 
   for (auto _ : state)
