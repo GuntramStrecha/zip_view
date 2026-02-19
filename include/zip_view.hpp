@@ -183,6 +183,9 @@ namespace ranges
 template <typename... Containers>
 class zip_view
 {
+public:
+  static constexpr auto INDICES = detail::make_index_sequence<sizeof...(Containers)>{};
+
 private:
   using storage_tuple = std::tuple<detail::view_t<Containers>...>;
 
@@ -253,9 +256,6 @@ private:
     return const_references(*std::next(std::get<Is>(views_).begin(), index)...);
   }
 
-public:
-  static constexpr auto INDICES = detail::make_index_sequence<sizeof...(Containers)>{};
-
   template <typename IterTuple>
   class basic_iterator
   {
@@ -300,7 +300,6 @@ public:
     template <std::size_t... Is>
     static auto reference_for(detail::index_sequence<Is...>) -> deref_tuple<Is...>;
 
-  private:
     template <std::size_t... Is>
     auto dereference(detail::index_sequence<Is...>) -> deref_tuple<Is...>
     {
@@ -460,6 +459,7 @@ public:
     }
   };
 
+public:
   using iterator       = basic_iterator<iterators_mut>;
   using const_iterator = basic_iterator<iterators_const>;
 
