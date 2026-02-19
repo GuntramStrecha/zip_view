@@ -15,7 +15,10 @@ static void BM_StdZipWithTemporaries(benchmark::State& state)
   for (auto _ : state)
   {
     int sum = 0;
-    for (auto t : std::ranges::views::zip(std::ranges::iota_view<int,int>(0, N))) { sum += std::get<0>(t); }
+    for (auto t : std::ranges::views::zip(std::ranges::iota_view<int, int>(0, N)))
+    {
+      sum += std::get<0>(t);
+    }
     benchmark::DoNotOptimize(sum);
   }
 }
@@ -26,7 +29,10 @@ static void BM_GstZipWithTemporaries(benchmark::State& state)
   for (auto _ : state)
   {
     int sum = 0;
-    for (auto t : gst::ranges::views::zip(std::ranges::iota_view<int,int>(0, N))) { sum += std::get<0>(t); }
+    for (auto t : gst::ranges::views::zip(std::ranges::iota_view<int, int>(0, N)))
+    {
+      sum += std::get<0>(t);
+    }
     benchmark::DoNotOptimize(sum);
   }
 }
