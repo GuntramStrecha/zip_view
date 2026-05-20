@@ -39,7 +39,7 @@ static void BM_NestedZipIterate2x2_impl(benchmark::State& state)
       return std_zip(std::forward<decltype(args)>(args)...);
   };
 
-  using iota = std::ranges::iota_view<int, int>;
+  using iota  = std::ranges::iota_view<int, int>;
   auto zip1   = make_zip(iota(0, 100000), iota(100000, 200000));
   auto zip2   = make_zip(iota(200000, 300000), iota(300000, 400000));
   auto nested = make_zip(zip1, zip2);
@@ -77,7 +77,7 @@ static void BM_NestedZipAccumulate_impl(benchmark::State& state)
       return std_zip(std::forward<decltype(args)>(args)...);
   };
 
-  using iota = std::ranges::iota_view<int, int>;
+  using iota  = std::ranges::iota_view<int, int>;
   auto zip1   = make_zip(iota(0, 100000), iota(100000, 200000));
   auto zip2   = make_zip(iota(200000, 300000), iota(300000, 400000));
   auto nested = make_zip(zip1, zip2);
@@ -118,7 +118,7 @@ static void BM_NestedZipTransform_impl(benchmark::State& state)
       return std_zip(std::forward<decltype(args)>(args)...);
   };
 
-  using iota = std::ranges::iota_view<int, int>;
+  using iota  = std::ranges::iota_view<int, int>;
   auto zip1   = make_zip(iota(0, 100000), iota(100000, 200000));
   auto zip2   = make_zip(iota(200000, 300000), iota(300000, 400000));
   auto nested = make_zip(zip1, zip2);
@@ -156,7 +156,7 @@ static void BM_NestedZipFindIf_impl(benchmark::State& state)
       return std_zip(std::forward<decltype(args)>(args)...);
   };
 
-  using iota = std::ranges::iota_view<int, int>;
+  using iota  = std::ranges::iota_view<int, int>;
   auto zip1   = make_zip(iota(0, 100000), iota(100000, 200000));
   auto zip2   = make_zip(iota(200000, 300000), iota(300000, 400000));
   auto nested = make_zip(zip1, zip2);
@@ -191,7 +191,7 @@ static void BM_NestedZipForEach_impl(benchmark::State& state)
       return std_zip(std::forward<decltype(args)>(args)...);
   };
 
-  using iota = std::ranges::iota_view<int, int>;
+  using iota  = std::ranges::iota_view<int, int>;
   auto zip1   = make_zip(iota(0, 100000), iota(100000, 200000));
   auto zip2   = make_zip(iota(200000, 300000), iota(300000, 400000));
   auto nested = make_zip(zip1, zip2);
@@ -228,7 +228,7 @@ static void BM_NestedZipIterate2x2x2_impl(benchmark::State& state)
       return std_zip(std::forward<decltype(args)>(args)...);
   };
 
-  using iota = std::ranges::iota_view<int, int>;
+  using iota  = std::ranges::iota_view<int, int>;
   auto zip1_1 = make_zip(iota(0, 50000), iota(50000, 100000));
   auto zip1_2 = make_zip(iota(100000, 150000), iota(150000, 200000));
   auto zip2_1 = make_zip(iota(200000, 250000), iota(250000, 300000));
@@ -274,7 +274,7 @@ static void BM_DeepNestedZipIterate_impl(benchmark::State& state)
       return std_zip(std::forward<decltype(args)>(args)...);
   };
 
-  using iota = std::ranges::iota_view<int, int>;
+  using iota       = std::ranges::iota_view<int, int>;
   auto zip1_1      = make_zip(iota(0, 50000), iota(50000, 100000));
   auto zip1_2      = make_zip(iota(100000, 150000), iota(150000, 200000));
   auto zip2_1      = make_zip(iota(200000, 250000), iota(250000, 300000));
@@ -324,7 +324,7 @@ static void BM_NestedZipSubscriptAccess_impl(benchmark::State& state)
       return std_zip(std::forward<decltype(args)>(args)...);
   };
 
-  using iota = std::ranges::iota_view<int, int>;
+  using iota  = std::ranges::iota_view<int, int>;
   auto zip1   = make_zip(iota(0, 100000), iota(100000, 200000));
   auto zip2   = make_zip(iota(200000, 300000), iota(300000, 400000));
   auto nested = make_zip(zip1, zip2);
